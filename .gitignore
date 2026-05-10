@@ -1,0 +1,7 @@
+.secrets/
+terraform/backend/
+
+# Cloudflare token automation
+cloudflare-platform/secrets/*.env
+cloudflare-platform/backups/
+*.tfvars
