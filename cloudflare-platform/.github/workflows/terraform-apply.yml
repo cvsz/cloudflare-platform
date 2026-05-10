@@ -1,16 +1,25 @@
 name: terraform-apply
+
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        required: true
-        default: dev
+
 jobs:
-  apply:
+  terraform:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+
+    env:
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+      CF_DNS_TOKEN: ${{ secrets.CF_DNS_TOKEN }}
+
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
-      - run: terraform -chdir=cloudflare-platform/terraform/envs/${{ github.event.inputs.environment }} init -input=false
-      - run: terraform -chdir=cloudflare-platform/terraform/envs/${{ github.event.inputs.environment }} apply -auto-approve
+      - name: Apply
+        run: |
+          export TF_VAR_cf_account_id="${CF_ACCOUNT_ID}"
+          export TF_VAR_cf_zone_id="${CF_ZONE_ID}"
+          export TF_VAR_cf_dns_token="${CF_DNS_TOKEN}"
+
+          terraform init
+          terraform apply -auto-approve
