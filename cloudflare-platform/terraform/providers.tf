@@ -7,10 +7,8 @@ terraform {
       version = "~> 4.30"
     }
   }
-
-  backend "local" {}
 }
 
 provider "cloudflare" {
-  api_token = var.cf_api_token
+  api_token = var.cf_dns_token
 }

@@ -1,2 +1,22 @@
-.secrets/
-terraform/backend/
+# Secrets
+secrets/
+*.env
+*.tfvars
+*.pem
+*.key
+*.p12
+
+# Terraform
+.terraform/
+terraform.tfstate*
+
+# Cloudflare
+cloudflared/
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
