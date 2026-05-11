@@ -2,16 +2,14 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-: "${CF_EMAIL:?Missing CF_EMAIL}"
-: "${CF_GLOBAL_API_KEY:?Missing CF_GLOBAL_API_KEY}"
+: "${CF_API_TOKEN:?Missing CF_API_TOKEN}"
 
 readonly TARGET_DOMAIN="zeaz.dev"
 
 response="$(
   curl -sS \
     "https://api.cloudflare.com/client/v4/zones?page=1&per_page=100" \
-    -H "X-Auth-Email: ${CF_EMAIL}" \
-    -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}"
+    -H "Authorization: Bearer ${CF_API_TOKEN}"
 )"
 
 success="$(echo "${response}" | jq -r '.success')"

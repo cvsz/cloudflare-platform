@@ -31,8 +31,7 @@ api_call() {
       if curl -fsS --max-time "${REQUEST_TIMEOUT_SECONDS}" \
         -X "${method}" \
         "${API_BASE}${endpoint}" \
-        -H "X-Auth-Email: ${CF_EMAIL}" \
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+        -H "Authorization: Bearer ${CF_API_TOKEN}" \
         -H "Content-Type: application/json" \
         --data "${payload}"; then
         return 0
@@ -41,8 +40,7 @@ api_call() {
       if curl -fsS --max-time "${REQUEST_TIMEOUT_SECONDS}" \
         -X "${method}" \
         "${API_BASE}${endpoint}" \
-        -H "X-Auth-Email: ${CF_EMAIL}" \
-        -H "X-Auth-Key: ${CF_GLOBAL_API_KEY}" \
+        -H "Authorization: Bearer ${CF_API_TOKEN}" \
         -H "Content-Type: application/json"; then
         return 0
       fi
@@ -105,8 +103,7 @@ create_token() {
 }
 
 main() {
-  require_env CF_GLOBAL_API_KEY
-  require_env CF_EMAIL
+  require_env CF_API_TOKEN
   require_env CF_ACCOUNT_ID
   require_env CF_ZONE_ID
   command -v jq >/dev/null
@@ -117,7 +114,7 @@ main() {
   log "Generating Cloudflare API tokens"
   local cf_api_token cf_dns_token cf_zt_token cf_workers_token cf_waf_token cf_tunnel_token cf_r2_token
 
-  cf_api_token="${CF_GLOBAL_API_KEY}"
+  cf_api_token="${CF_API_TOKEN}"
   cf_dns_token="$(create_token "zeaz-dns-token" "$(policy_dns)")"
   cf_zt_token="$(create_token "zeaz-zt-token" "$(policy_zt)")"
   cf_workers_token="$(create_token "zeaz-workers-token" "$(policy_workers)")"
