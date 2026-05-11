@@ -8,8 +8,18 @@ variable "account_id" {
   }
 }
 
-variable "name" { type = string, description = "Access app name.", nullable = false }
-variable "domain" { type = string, description = "Application domain.", nullable = false }
+variable "name" {
+  type        = string
+  description = "Access app name."
+  nullable    = false
+}
+
+variable "domain" {
+  type        = string
+  description = "Application domain."
+  nullable    = false
+}
+
 variable "session_duration" {
   type        = string
   description = "Session duration string (e.g., 4h, 24h)."
@@ -20,5 +30,17 @@ variable "session_duration" {
     error_message = "session_duration must be in hours, e.g. 4h."
   }
 }
-variable "allowed_idps" { type = list(string), description = "Allowed IdP IDs.", nullable = false, default = [] }
-variable "service_tokens_enabled" { type = bool, description = "Enable service token authentication.", nullable = false, default = true }
+
+variable "allowed_idps" {
+  type        = list(string)
+  description = "Allowed IdP IDs."
+  nullable    = false
+  default     = []
+}
+
+variable "service_tokens_enabled" {
+  type        = bool
+  description = "Enable service token authentication."
+  nullable    = false
+  default     = true
+}
