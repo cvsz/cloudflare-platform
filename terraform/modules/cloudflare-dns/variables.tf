@@ -23,15 +23,15 @@ variable "primary_domain" {
 
 variable "records" {
   type = map(object({
-    name             = string
-    type             = string
-    value            = string
-    ttl              = number
-    proxied          = bool
-    target_from      = optional(string)
-    origin_host_key  = optional(string)
-    comment          = optional(string)
-    priority         = optional(number)
+    name            = string
+    type            = string
+    value           = string
+    ttl             = number
+    proxied         = bool
+    target_from     = optional(string)
+    origin_host_key = optional(string)
+    comment         = optional(string)
+    priority        = optional(number)
   }))
   description = "DNS records keyed by unique logical ID."
   nullable    = false
