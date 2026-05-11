@@ -4,7 +4,7 @@ ENV ?= dev
 TF_DIR := terraform/envs/$(ENV)
 
 help:
-	@echo "targets: validate contract plan-tier backend sops-bootstrap mcp-config plan apply drift test backup restore ai-bootstrap"
+	@echo "targets: validate contract plan-tier backend sops-bootstrap mcp-config plan apply drift test backup restore ai-bootstrap bootstrap-agent validate-agent"
 
 validate:
 	@scripts/validate.sh
@@ -45,3 +45,9 @@ ai-bootstrap:
 
 mcp-config:
 	@scripts/ai/render-mcp-config.sh
+
+bootstrap-agent:
+	@scripts/ai/bootstrap-agent.sh
+
+validate-agent:
+	@scripts/ai/validate-agent-env.sh
