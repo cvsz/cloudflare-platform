@@ -1,0 +1,17 @@
+{
+  "servers": {
+    "cloudflare-api": {
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cloudflare-platform/scripts/ai/bootstrap-agents.sh cloudflare-api"
+      ],
+      "env": {
+        "CF_ACCOUNT_ID": "${CF_ACCOUNT_ID}",
+        "CF_API_TOKEN": "${CF_API_TOKEN}",
+        "CF_ZONE_ID": "${CF_ZONE_ID}",
+        "PRIMARY_DOMAIN": "${PRIMARY_DOMAIN}"
+      }
+    }
+  }
+}
