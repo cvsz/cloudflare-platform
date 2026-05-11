@@ -4,7 +4,7 @@ ENV ?= dev
 TF_DIR := terraform/envs/$(ENV)
 
 help:
-	@echo "targets: validate contract plan-tier backend sops-bootstrap plan apply drift test backup restore"
+	@echo "targets: validate contract plan-tier backend sops-bootstrap plan apply drift test backup restore ai-bootstrap"
 
 validate:
 	@scripts/validate.sh
@@ -38,3 +38,6 @@ backend:
 
 sops-bootstrap:
 	@scripts/sops-bootstrap.sh
+
+ai-bootstrap:
+	@scripts/ai/bootstrap-agents.sh cloudflare-api
