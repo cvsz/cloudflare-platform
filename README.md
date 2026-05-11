@@ -352,3 +352,13 @@ To report a security issue or leaked credential, see [`.github/SECURITY.md`](.gi
 ---
 
 *Built for ZeazDev · Licensed under MIT · See [AGENTS.md](AGENTS.md) for the full platform specification.*
+
+
+## Phased deployment (F1-F6)
+
+- F1: Context + Variables (`bash scripts/validate.sh --offline --strict`)
+- F2: Terraform Foundation
+- F3: Zero Trust + Identity
+- F4: DNS + Tunnels + Networking
+- F5: Workers + Edge + AI
+- F6: Monitoring + DR + Security
