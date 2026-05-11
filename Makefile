@@ -78,3 +78,7 @@ doctor:
 	@terraform version
 	@tofu version
 	@python3 --version
+
+
+validate-f1:
+	@bash scripts/validate.sh --offline --strict
