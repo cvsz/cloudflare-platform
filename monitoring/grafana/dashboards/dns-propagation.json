@@ -1,0 +1,17 @@
+{
+  "id": null,
+  "uid": "dns-propagation",
+  "title": "dns-propagation",
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "dns-propagation trend",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(rate(cloudflare_dns_propagation_total[5m]))", "refId": "A"}]
+    }
+  ]
+}

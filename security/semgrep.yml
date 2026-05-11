@@ -1,0 +1,7 @@
+rules:
+  - id: bash-no-curl-pipe-shell
+    patterns:
+      - pattern: curl ... | bash
+    message: Do not pipe curl directly to shell.
+    severity: ERROR
+    languages: [bash]

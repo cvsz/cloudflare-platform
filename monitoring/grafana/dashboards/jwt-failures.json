@@ -1,0 +1,17 @@
+{
+  "id": null,
+  "uid": "jwt-failures",
+  "title": "jwt-failures",
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "jwt-failures trend",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(rate(cloudflare_jwt_failures_total[5m]))", "refId": "A"}]
+    }
+  ]
+}

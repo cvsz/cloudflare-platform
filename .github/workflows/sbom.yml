@@ -1,0 +1,12 @@
+name: SBOM Generation and Cosign Signing
+on: [workflow_dispatch]
+permissions: {contents: read, id-token: write}
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/generate-sbom.sh
+      - run: scripts/sign-artifacts.sh artifacts.sbom.spdx.json
+      - uses: actions/upload-artifact@v4
+        with: {name: sbom, path: artifacts.sbom.spdx.json}

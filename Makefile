@@ -69,10 +69,10 @@ drift-detect:
 	@terraform -chdir=$(TF_ENV_DIR) plan -detailed-exitcode || test $$? -eq 2
 
 security-scan:
-	@trivy fs .
+	@scripts/security-scan.sh
 
 sbom:
-	@syft . -o spdx-json
+	@scripts/generate-sbom.sh
 
 doctor:
 	@terraform version
