@@ -1,0 +1,17 @@
+{
+  "id": null,
+  "uid": "workers-failures",
+  "title": "workers-failures",
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "workers-failures trend",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(rate(cloudflare_workers_failures_total[5m]))", "refId": "A"}]
+    }
+  ]
+}

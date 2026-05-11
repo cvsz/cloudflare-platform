@@ -1,9 +1,11 @@
-name: security-scan
-on: [pull_request]
-concurrency: { group: sec-${{ github.ref }}, cancel-in-progress: true }
+name: Security Scanning
+on: [pull_request, workflow_dispatch]
+permissions: {contents: read, security-events: write}
 jobs:
   scan:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "trivy + sbom + cosign hooks"
+      - run: scripts/security-scan.sh
+      - uses: actions/upload-artifact@v4
+        with: {name: sbom, path: artifacts.sbom.spdx.json}
