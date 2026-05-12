@@ -1,23 +1,26 @@
 locals {
-  enterprise = var.plan_tier == "Enterprise"
+  normalized_plan_tier = title(lower(var.plan_tier))
+  enterprise           = lower(var.plan_tier) == "enterprise"
 }
 
 module "dns" {
   source  = "./modules/cloudflare-dns"
   zone_id = var.cf_zone_id
+
   records = {
     auth = {
       name    = "auth"
       type    = "CNAME"
-      value   = "auth.zeaz.dev"
+      value   = "auth.${var.domain}"
       ttl     = 1
       proxied = true
       comment = "Authentication endpoint"
     }
+
     api = {
       name    = "api"
       type    = "CNAME"
-      value   = "api.zeaz.dev"
+      value   = "api.${var.domain}"
       ttl     = 1
       proxied = true
       comment = "Primary API endpoint"
@@ -34,7 +37,7 @@ module "api_shield" {
 module "waf" {
   source        = "./modules/cloudflare-waf"
   zone_id       = var.cf_zone_id
-  redirect_host = "zeaz.dev"
+  redirect_host = var.domain
 }
 
 module "workers" {
@@ -55,26 +58,31 @@ module "d1" {
   name       = "platform-db"
 }
 
-module "access_app" {
+module "access_app_platform" {
   source     = "./modules/cloudflare-access-app"
   account_id = var.cf_account_id
   name       = "platform-access"
+  domain     = "auth.${var.domain}"
 }
 
-module "access_policy" {
-  source     = "./modules/cloudflare-access-policy"
-  account_id = var.cf_account_id
-  name       = "allow-corp"
+module "access_policy_platform" {
+  source         = "./modules/cloudflare-access-policy"
+  account_id     = var.cf_account_id
+  application_id = module.access_app_platform.application_id
+  name           = "allow-corp"
 }
 
-module "saml_provider" {
-  source     = "./modules/cloudflare-saml-provider"
-  account_id = var.cf_account_id
-  name       = "corp-idp"
+module "saml_provider_platform" {
+  source        = "./modules/cloudflare-saml-provider"
+  account_id    = var.cf_account_id
+  name          = "corp-idp"
+  provider_type = var.identity_provider_type
+  metadata_url  = var.identity_provider_metadata_url
 }
 
-module "tunnel" {
+module "tunnel_platform" {
   source     = "./modules/cloudflare-tunnel"
   account_id = var.cf_account_id
   name       = "platform-tunnel"
+  secret     = var.tunnel_secret
 }
