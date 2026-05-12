@@ -45,7 +45,7 @@ mkdir -p "$BACKUP_DIR"
 
 [[ -f "$ENV_FILE" ]] || {
   warn "missing env file: $ENV_FILE"
-  warn "run setup first"
+  warn "run scripts/environments/setup.sh first"
   exit 0
 }
 
@@ -85,17 +85,16 @@ tf_available(){
   return 0
 }
 
+tf_init(){
+  tf_available || return 0
+  terraform -chdir="$ROOT/terraform" init || warn "terraform init failed"
+}
+
 tf_validate(){
   tf_available || return 0
-
-  terraform -chdir="$ROOT/terraform" fmt -check -recursive || \
-    warn "terraform fmt check failed"
-
-  terraform -chdir="$ROOT/terraform" init || \
-    warn "terraform init failed"
-
-  terraform -chdir="$ROOT/terraform" validate || \
-    warn "terraform validate failed"
+  terraform -chdir="$ROOT/terraform" fmt -check -recursive || warn "terraform fmt check failed"
+  terraform -chdir="$ROOT/terraform" init || warn "terraform init failed"
+  terraform -chdir="$ROOT/terraform" validate || warn "terraform validate failed"
 }
 
 drift(){
@@ -107,26 +106,22 @@ drift(){
   set -e
 
   case "$rc" in
-    0)
-      log "no drift detected"
-      ;;
-    2)
-      warn "drift detected"
-      ;;
-    *)
-      warn "terraform drift check failed rc=$rc"
-      ;;
+    0) log "no drift detected" ;;
+    2) warn "drift detected" ;;
+    *) warn "terraform drift check failed rc=$rc" ;;
   esac
+}
+
+plan(){
+  tf_available || return 0
+  terraform -chdir="$ROOT/terraform" plan || warn "terraform plan failed"
 }
 
 upgrade(){
   tf_available || return 0
-
   backup_env
-  terraform -chdir="$ROOT/terraform" init -upgrade || \
-    warn "terraform upgrade failed"
-  terraform -chdir="$ROOT/terraform" validate || \
-    warn "terraform validate failed after upgrade"
+  terraform -chdir="$ROOT/terraform" init -upgrade || warn "terraform upgrade failed"
+  terraform -chdir="$ROOT/terraform" validate || warn "terraform validate failed after upgrade"
 }
 
 case "$MODE" in
@@ -143,6 +138,11 @@ case "$MODE" in
     validate_env
     drift
     ;;
+  plan)
+    validate_env
+    tf_init
+    plan
+    ;;
   upgrade)
     validate_env
     upgrade
@@ -156,6 +156,7 @@ Usage:
   $0 check      # validate env + terraform + drift
   $0 validate   # env + terraform validation only
   $0 drift      # terraform drift check only
+  $0 plan       # terraform init + plan
   $0 upgrade    # terraform init -upgrade
   $0 backup     # backup .env only
 
