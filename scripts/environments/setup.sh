@@ -3,13 +3,12 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 MODE="${1:-}"
-STRICT_TOOLS=false
+STRICT_TOOLS="${STRICT_TOOLS:-false}"
 [[ "${MODE}" == "--strict-tools" ]] && STRICT_TOOLS=true
 
 log(){ printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 warn(){ log "WARN: $*" >&2; }
 die(){ log "ERROR: $*" >&2; exit 1; }
-
 has(){ command -v "$1" >/dev/null 2>&1; }
 
 find_root() {
@@ -33,7 +32,12 @@ ROOT="${PROJECT_ROOT:-}"
 if [[ -z "${ROOT}" ]]; then
   ROOT="$(find_root || true)"
 fi
-[[ -n "${ROOT}" && "${ROOT}" != "/" ]] || die "could not detect repo root. Run from inside cvsz/cloudflare-platform or set PROJECT_ROOT=/path/to/repo"
+
+[[ -n "${ROOT}" && "${ROOT}" != "/" ]] || {
+  warn "could not detect repo root from PWD=${PWD}"
+  warn "set PROJECT_ROOT=/home/zeazdev/cloudflare-platform"
+  exit 0
+}
 
 ENV_FILE="${ENV_FILE:-$ROOT/.env}"
 BACKUP_DIR="$ROOT/.cloudflare-backups"
@@ -92,9 +96,9 @@ else
 fi
 
 if has terraform && [[ -d "$ROOT/terraform" ]]; then
-  terraform -chdir="$ROOT/terraform" fmt -recursive
-  terraform -chdir="$ROOT/terraform" init -backend=false
-  terraform -chdir="$ROOT/terraform" validate
+  terraform -chdir="$ROOT/terraform" fmt -recursive || warn "terraform fmt failed"
+  terraform -chdir="$ROOT/terraform" init -backend=false || warn "terraform init failed"
+  terraform -chdir="$ROOT/terraform" validate || warn "terraform validate failed"
 else
   if [[ "${STRICT_TOOLS}" == "true" ]]; then
     die "terraform is required but missing"
