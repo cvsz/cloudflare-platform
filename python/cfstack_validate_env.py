@@ -46,7 +46,8 @@ TOKEN_VARS = [
 HEX_ID_RE = re.compile(r"^[a-f0-9]{32}$", re.IGNORECASE)
 HOSTNAME_RE = re.compile(r"^(?=.{1,253}$)(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))*$")
 DURATION_RE = re.compile(r"^(?P<value>[1-9][0-9]*)(?P<unit>[smhdw]?)$", re.IGNORECASE)
-PLAN_TIERS = {"Free", "Pro", "Business", "Enterprise"}
+PLAN_TIERS = {"free", "pro", "business", "enterprise"}
+PLAN_TIER_DISPLAY = "Free, Pro, Business, Enterprise"
 ENVIRONMENTS = {"dev", "staging", "prod"}
 IDP_TYPES = {"saml", "oidc"}
 
@@ -107,15 +108,15 @@ def validate_with_warnings(env: Dict[str, str]) -> ValidationResult:
         if value and len(value.strip()) < 20:
             warnings.append(f"{token_key}: token length is unexpectedly short")
 
-    environment = env.get("ENVIRONMENT", "")
+    environment = env.get("ENVIRONMENT", "").strip().lower()
     if environment and environment not in ENVIRONMENTS:
         errors.append("ENVIRONMENT: must be one of dev, staging, prod")
 
-    plan = env.get("CLOUDFLARE_PLAN_TIER", "")
+    plan = env.get("CLOUDFLARE_PLAN_TIER", "").strip().lower()
     if plan and plan not in PLAN_TIERS:
-        errors.append("CLOUDFLARE_PLAN_TIER: must be one of Free, Pro, Business, Enterprise")
+        errors.append(f"CLOUDFLARE_PLAN_TIER: must be one of {PLAN_TIER_DISPLAY}")
 
-    idp_type = env.get("IDENTITY_PROVIDER_TYPE", "")
+    idp_type = env.get("IDENTITY_PROVIDER_TYPE", "").strip().lower()
     if idp_type and idp_type not in IDP_TYPES:
         errors.append("IDENTITY_PROVIDER_TYPE: must be saml or oidc")
 
