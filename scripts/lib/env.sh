@@ -11,10 +11,23 @@ readonly REQUIRED_ENV_VARS=(
 )
 
 load_dotenv_if_present() {
-  if [[ -f .env ]]; then
+  local env_path="${1:-.env}"
+  if [[ -f "${env_path}" ]]; then
     set -a
-    # shellcheck disable=SC1091
-    source .env
+    # shellcheck disable=SC1090
+    source "${env_path}"
     set +a
   fi
+}
+
+require_env_presence() {
+  local missing=0
+  local var
+  for var in "${REQUIRED_ENV_VARS[@]}"; do
+    if [[ -z "${!var:-}" ]]; then
+      missing=$((missing + 1))
+      printf 'ERROR: %s: missing\n' "${var}" >&2
+    fi
+  done
+  return "${missing}"
 }
