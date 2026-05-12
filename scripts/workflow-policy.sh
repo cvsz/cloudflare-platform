@@ -87,22 +87,22 @@ while IFS= read -r workflow_file; do
   [[ -z "$workflow_file" ]] && continue
 
   if ! rg -q '^permissions:' "$workflow_file"; then
-    printf '{"level":"ERROR","file":"%s","msg":"missing top-level permissions"}\n' "${workflow_file#${ROOT_DIR}/}" >&2
+    printf '{"level":"ERROR","file":"%s","msg":"missing top-level permissions"}\n' "${workflow_file#"${ROOT_DIR}"/}" >&2
     fail_count=$((fail_count + 1))
   fi
 
   if ! rg -q 'timeout-minutes:' "$workflow_file"; then
-    printf '{"level":"ERROR","file":"%s","msg":"missing job timeout-minutes"}\n' "${workflow_file#${ROOT_DIR}/}" >&2
+    printf '{"level":"ERROR","file":"%s","msg":"missing job timeout-minutes"}\n' "${workflow_file#"${ROOT_DIR}"/}" >&2
     fail_count=$((fail_count + 1))
   fi
 
   if rg -q '^\s*push:' "$workflow_file" && rg -q 'apply|destroy' "$workflow_file"; then
-    printf '{"level":"ERROR","file":"%s","msg":"mutating workflow must not run on push"}\n' "${workflow_file#${ROOT_DIR}/}" >&2
+    printf '{"level":"ERROR","file":"%s","msg":"mutating workflow must not run on push"}\n' "${workflow_file#"${ROOT_DIR}"/}" >&2
     fail_count=$((fail_count + 1))
   fi
 
   if rg -q 'run:\s*make validate(\s|$)' "$workflow_file" && ! rg -q 'opentofu/setup-opentofu@v1' "$workflow_file"; then
-    printf '{"level":"ERROR","file":"%s","msg":"workflows running make validate must install OpenTofu"}\n' "${workflow_file#${ROOT_DIR}/}" >&2
+    printf '{"level":"ERROR","file":"%s","msg":"workflows running make validate must install OpenTofu"}\n' "${workflow_file#"${ROOT_DIR}"/}" >&2
     fail_count=$((fail_count + 1))
   fi
 
@@ -113,7 +113,7 @@ while IFS= read -r workflow_file; do
 
   if [[ -n "${normalized_name_to_file[$normalized_name]:-}" ]]; then
     printf '{"level":"ERROR","file":"%s","msg":"duplicate/overlapping workflow family","conflicts_with":"%s"}\n' \
-      "${workflow_file#${ROOT_DIR}/}" "${normalized_name_to_file[$normalized_name]#${ROOT_DIR}/}" >&2
+      "${workflow_file#"${ROOT_DIR}"/}" "${normalized_name_to_file[$normalized_name]#"${ROOT_DIR}"/}" >&2
     fail_count=$((fail_count + 1))
   else
     normalized_name_to_file[$normalized_name]="$workflow_file"

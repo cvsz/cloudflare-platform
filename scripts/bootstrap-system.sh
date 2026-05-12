@@ -210,8 +210,8 @@ print_versions(){
     warn "$PYTHON_BIN not installed"
   fi
 
-  [[ -x "$(venv_python)" ]] && "$(venv_python)" --version || true
-  [[ -x "$(venv_pip)" ]] && "$(venv_pip)" --version || true
+  if [[ -x "$(venv_python)" ]]; then "$(venv_python)" --version || true; fi
+  if [[ -x "$(venv_pip)" ]]; then "$(venv_pip)" --version || true; fi
 
   if [[ -x "$PROJECT_ROOT/$PYTHON_VENV_DIR/bin/pytest" ]]; then
     "$PROJECT_ROOT/$PYTHON_VENV_DIR/bin/pytest" --version || true

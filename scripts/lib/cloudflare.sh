@@ -6,11 +6,13 @@ cloudflare_api_check() {
   local token="$1"
   local expected_permission="$2"
 
-  curl -sS --fail-with-body \
+  local payload
+  payload="$(curl -sS --fail-with-body \
     -H "Authorization: Bearer ${token}" \
     -H 'Content-Type: application/json' \
-    https://api.cloudflare.com/client/v4/user/tokens/verify \
-  | python3 - "$expected_permission" <<'PY'
+    https://api.cloudflare.com/client/v4/user/tokens/verify)"
+
+  printf '%s' "$payload" | python3 - "$expected_permission" <<'PY'
 import json
 import sys
 

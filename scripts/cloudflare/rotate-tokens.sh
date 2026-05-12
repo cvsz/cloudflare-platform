@@ -4,7 +4,8 @@ IFS=$'\n\t'
 
 readonly TOKENS_FILE="./secrets/cloudflare.env"
 readonly BACKUP_DIR="./backups/tokens"
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
 
 log() {
   printf '\n[%s] %s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$*"

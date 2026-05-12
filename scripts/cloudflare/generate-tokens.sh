@@ -54,11 +54,11 @@ api_call() {
   local attempt
   for attempt in $(seq 1 "${MAX_RETRIES}"); do
     if [[ -n "${payload}" ]]; then
-      if curl -fsS --max-time "${REQUEST_TIMEOUT_SECONDS}"         -X "${method}"         "${API_BASE}${endpoint}"         -H "Authorization: Bearer ${CF_API_TOKEN}"         -H "Content-Type: application/json"         --data "${payload}"; then
+      if curl -fsS --max-time "${REQUEST_TIMEOUT_SECONDS}"         -X "${method}"         "${API_BASE}${endpoint}"         -H "Authorization: Bearer ${cf_api_token}"         -H "Content-Type: application/json"         --data "${payload}"; then
         return 0
       fi
     else
-      if curl -fsS --max-time "${REQUEST_TIMEOUT_SECONDS}"         -X "${method}"         "${API_BASE}${endpoint}"         -H "Authorization: Bearer ${CF_API_TOKEN}"         -H "Content-Type: application/json"; then
+      if curl -fsS --max-time "${REQUEST_TIMEOUT_SECONDS}"         -X "${method}"         "${API_BASE}${endpoint}"         -H "Authorization: Bearer ${cf_api_token}"         -H "Content-Type: application/json"; then
         return 0
       fi
     fi
