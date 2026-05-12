@@ -11,10 +11,3 @@ variable "name" {
   nullable    = true
   default     = null
 }
-
-variable "records" {
-  type        = map(string)
-  description = "records"
-  nullable    = true
-  default     = {}
-}
