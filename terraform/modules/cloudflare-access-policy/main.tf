@@ -12,6 +12,13 @@ resource "cloudflare_zero_trust_access_policy" "this" {
     }
   }
 
+  dynamic "include" {
+    for_each = length(var.include_groups) == 0 && length(var.include_email_domains) > 0 ? [1] : []
+    content {
+      email_domain = var.include_email_domains
+    }
+  }
+
   dynamic "require" {
     for_each = var.require_mfa ? [1] : []
     content {
