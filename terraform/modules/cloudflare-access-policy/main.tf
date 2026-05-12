@@ -1,4 +1,4 @@
-resource "cloudflare_access_policy" "this" {
+resource "cloudflare_zero_trust_access_policy" "this" {
   account_id     = var.account_id
   application_id = var.application_id
   name           = var.name
