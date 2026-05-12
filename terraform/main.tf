@@ -1,5 +1,5 @@
 locals {
-  enterprise           = lower(var.plan_tier) == "enterprise"
+  enterprise = lower(var.plan_tier) == "enterprise"
 }
 
 module "dns" {
@@ -65,10 +65,11 @@ module "access_app_platform" {
 }
 
 module "access_policy_platform" {
-  source         = "./modules/cloudflare-access-policy"
-  account_id     = var.cf_account_id
-  application_id = module.access_app_platform.application_id
-  name           = "allow-corp"
+  source                = "./modules/cloudflare-access-policy"
+  account_id            = var.cf_account_id
+  application_id        = module.access_app_platform.application_id
+  name                  = "allow-corp"
+  include_email_domains = [var.domain]
 }
 
 module "saml_provider_platform" {
