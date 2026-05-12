@@ -118,7 +118,7 @@ audit(){
 env_file_value(){
   local file="$1" key="$2"
   [[ -f "$file" ]] || return 0
-  awk -F= -v k="$key" '$1 == k {v=$0; sub("^[^=]*=", "", v); gsub(/^\"|\"$/, "", v); print v}' "$file" | tail -n 1
+  awk -F= -v k="$key" '$1 == k {v=$0; sub(/^[^=]*=/, "", v); gsub(/^"|"$/, "", v); print v}' "$file" | tail -n 1
 }
 
 epoch_of(){
