@@ -59,6 +59,29 @@ fi
 
 fail_count=0
 
+# Repository hygiene checks
+if [[ -d "${ROOT_DIR}/scripts/cloudflare/cloudflare" ]]; then
+  printf '{"level":"ERROR","path":"%s","msg":"nested duplicate token script directory is not allowed"}\n' "scripts/cloudflare/cloudflare" >&2
+  fail_count=$((fail_count + 1))
+fi
+
+if ! awk '
+  $0 ~ /^shell-validate:/ { in_target=1; next }
+  in_target && $0 ~ /^\t@find scripts -type f -name '\''\*\.sh'\'' -print0 \| xargs -0 shellcheck$/ { found=1; exit 0 }
+  in_target && $0 !~ /^\t/ { in_target=0 }
+  END { exit(found ? 0 : 1) }
+' "${ROOT_DIR}/Makefile"; then
+  printf '{"level":"ERROR","file":"Makefile","msg":"shell-validate must use find|xargs for portability"}\n' >&2
+  fail_count=$((fail_count + 1))
+fi
+
+for backend_file in dev.backend.hcl local.example.hcl s3.example.hcl; do
+  if [[ -f "${ROOT_DIR}/terraform/backend/${backend_file}" && ! -f "${ROOT_DIR}/opentofu/backend/${backend_file}" ]]; then
+    printf '{"level":"ERROR","file":"opentofu/backend/%s","msg":"missing backend parity file for opentofu"}\n' "${backend_file}" >&2
+    fail_count=$((fail_count + 1))
+  fi
+done
+
 declare -A normalized_name_to_file=()
 while IFS= read -r workflow_file; do
   [[ -z "$workflow_file" ]] && continue
@@ -75,6 +98,11 @@ while IFS= read -r workflow_file; do
 
   if rg -q '^\s*push:' "$workflow_file" && rg -q 'apply|destroy' "$workflow_file"; then
     printf '{"level":"ERROR","file":"%s","msg":"mutating workflow must not run on push"}\n' "${workflow_file#${ROOT_DIR}/}" >&2
+    fail_count=$((fail_count + 1))
+  fi
+
+  if rg -q 'run:\s*make validate(\s|$)' "$workflow_file" && ! rg -q 'opentofu/setup-opentofu@v1' "$workflow_file"; then
+    printf '{"level":"ERROR","file":"%s","msg":"workflows running make validate must install OpenTofu"}\n' "${workflow_file#${ROOT_DIR}/}" >&2
     fail_count=$((fail_count + 1))
   fi
 

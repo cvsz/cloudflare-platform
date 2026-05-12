@@ -219,7 +219,7 @@ make token-rotate
 | Variable | Required | Description |
 |---|---|---|
 | `SOPS_AGE_KEY` | yes | age private key for SOPS decryption. Keep this secret. |
-| `SECRET_ROTATION_INTERVAL` | no | Days between scheduled rotations. Default: `90` |
+| `SECRET_ROTATION_INTERVAL` | no | Rotation interval duration (for example `30d` or `12h`). Default: `30d` |
 | `CF_AI_GATEWAY_SLUG` | no | AI Gateway slug for `.mcp.json` MCP server |
 
 ---
