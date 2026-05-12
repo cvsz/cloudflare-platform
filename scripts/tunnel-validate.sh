@@ -2,8 +2,10 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-readonly SCRIPT_NAME="$(basename "$0")"
-readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_NAME="$(basename "$0")"
+readonly SCRIPT_NAME
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly ROOT_DIR
 readonly CONFIG_FILE="${ROOT_DIR}/tunnels/config.yaml"
 readonly DNS_FILE="${ROOT_DIR}/dns/records.yaml"
 readonly REQUIRED_HOSTS=(auth zveo studio analytics app pay treasury admin-wallet)

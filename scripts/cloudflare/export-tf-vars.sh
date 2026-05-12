@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
+# shellcheck source=secrets/cloudflare.env
 source secrets/cloudflare.env
 
 export TF_VAR_cf_account_id="${CF_ACCOUNT_ID}"

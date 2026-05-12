@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
+# shellcheck source=secrets/cloudflare.env
 source secrets/cloudflare.env
 
 required=(
