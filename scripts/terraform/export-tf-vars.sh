@@ -30,6 +30,7 @@ load_file(){
 # Preserve explicit TF_VAR_* values from caller.
 : "${TF_VAR_cf_dns_token:=${CF_DNS_TOKEN:-}}"
 : "${TF_VAR_cf_zone_id:=${CF_ZONE_ID:-}}"
+: "${TF_VAR_cf_waf_token:=${CF_WAF_TOKEN:-}}"
 : "${TF_VAR_cf_account_id:=${CF_ACCOUNT_ID:-}}"
 : "${TF_VAR_domain:=${PRIMARY_DOMAIN:-zeaz.dev}}"
 : "${TF_VAR_plan_tier:=${CLOUDFLARE_PLAN_TIER:-Free}}"
@@ -43,6 +44,7 @@ load_file "$ENV_FILE"
 
 export TF_VAR_cf_dns_token="${TF_VAR_cf_dns_token:-${CF_DNS_TOKEN:-}}"
 export TF_VAR_cf_zone_id="${TF_VAR_cf_zone_id:-${CF_ZONE_ID:-}}"
+export TF_VAR_cf_waf_token="${TF_VAR_cf_waf_token:-${CF_WAF_TOKEN:-}}"
 export TF_VAR_cf_account_id="${TF_VAR_cf_account_id:-${CF_ACCOUNT_ID:-}}"
 export TF_VAR_domain="${TF_VAR_domain:-${PRIMARY_DOMAIN:-zeaz.dev}}"
 export TF_VAR_plan_tier="${TF_VAR_plan_tier:-${CLOUDFLARE_PLAN_TIER:-Free}}"

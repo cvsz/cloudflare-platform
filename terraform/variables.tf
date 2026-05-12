@@ -10,6 +10,19 @@ variable "cf_dns_token" {
   }
 }
 
+
+variable "cf_waf_token" {
+  type        = string
+  sensitive   = true
+  description = "Cloudflare WAF Token"
+  nullable    = false
+
+  validation {
+    condition     = length(var.cf_waf_token) >= 32
+    error_message = "cf_waf_token must be at least 32 characters"
+  }
+}
+
 variable "cf_zone_id" {
   type        = string
   description = "Cloudflare Zone ID"

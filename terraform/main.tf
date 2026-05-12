@@ -34,7 +34,12 @@ module "api_shield" {
 }
 
 module "waf" {
-  source        = "./modules/cloudflare-waf"
+  source = "./modules/cloudflare-waf"
+
+  providers = {
+    cloudflare = cloudflare.waf
+  }
+
   zone_id       = var.cf_zone_id
   redirect_host = var.domain
 }
