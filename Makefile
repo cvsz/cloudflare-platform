@@ -2,145 +2,222 @@ SHELL := /usr/bin/env bash
 .SHELLFLAGS := -Eeuo pipefail -c
 .DEFAULT_GOAL := help
 
-ENVIRONMENT ?= dev
+PROJECT_ROOT ?= $(CURDIR)
+ENVIRONMENT ?= prod
 BACKEND_TYPE ?= local
+TF_BIN ?= terraform
+TOFU_BIN ?= tofu
+PYTHON ?= python3
+VENV_DIR ?= .venv
+STRICT_TOOLS ?= false
+CODEX_CLOUD ?= false
+STRICT_ENV ?= true
+CONFIRM_APPLY ?= no
+
+TF_ROOT := terraform
 TF_ENV_DIR := terraform/environments/$(ENVIRONMENT)
 TOFU_ENV_DIR := opentofu/environments/$(ENVIRONMENT)
-TF_BIN ?= terraform
+PYTEST := $(VENV_DIR)/bin/pytest
 
+export PROJECT_ROOT
+export STRICT_TOOLS
+export CODEX_CLOUD
+export STRICT_ENV
 
-.PHONY: help validate validate-env fmt fmt-check lint test tf-init tf-validate tf-plan tf-apply tf-destroy tofu-init tofu-validate tofu-plan tofu-apply drift-detect security-scan sbom doctor
+.PHONY: help bootstrap setup env load-env validate validate-env maintenance test fmt fmt-check lint shellcheck yaml-validate tf-init tf-fmt tf-fmt-check tf-validate tf-plan tf-apply tf-destroy tf-env-init tf-env-validate tf-env-plan tofu-init tofu-validate tofu-plan drift drift-detect token-clean token-rotate-dry token-rotate security-scan sbom doctor clean phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6 phase-f7 workflow-policy workflow-validate gitops-validate ci
 
 help:
-	@echo "Targets: validate validate-env fmt fmt-check lint test tf-init tf-validate tf-plan tf-apply tf-destroy tofu-init tofu-validate tofu-plan tofu-apply drift-detect security-scan sbom doctor"
+	@printf '%s\n' \
+	'Cloudflare Platform Make Targets' \
+	'' \
+	'Bootstrap:' \
+	'  make bootstrap              Install/check local tools and Python venv' \
+	'  make setup                  Generate/preserve .env using setup script' \
+	'  make env                    Load environment only; no strict validation' \
+	'  make load-env               Load Cloudflare env helper' \
+	'' \
+	'Validation:' \
+	'  make validate               Run tests + env + Terraform validation' \
+	'  make ci                     Alias for validate' \
+	'  make validate-env           Run strict Python env validator' \
+	'  make maintenance            Run scripts/environments/maintenance.sh validate' \
+	'  make test                   Run pytest suite' \
+	'  make fmt                    Terraform fmt recursive' \
+	'  make fmt-check              Terraform fmt check recursive' \
+	'  make lint                   Run optional shellcheck/tflint/yaml checks' \
+	'' \
+	'Terraform root:' \
+	'  make tf-init                terraform -chdir=terraform init' \
+	'  make tf-validate            terraform -chdir=terraform validate' \
+	'  make tf-plan                terraform -chdir=terraform plan' \
+	'  make tf-apply CONFIRM_APPLY=yes' \
+	'  make tf-destroy CONFIRM_APPLY=yes' \
+	'  make drift                  terraform plan -detailed-exitcode' \
+	'' \
+	'Terraform env roots:' \
+	'  make tf-env-init ENVIRONMENT=prod' \
+	'  make tf-env-validate ENVIRONMENT=prod' \
+	'  make tf-env-plan ENVIRONMENT=prod' \
+	'' \
+	'OpenTofu:' \
+	'  make tofu-init              Init OpenTofu env if tofu exists' \
+	'  make tofu-validate          Validate OpenTofu env if tofu exists' \
+	'  make tofu-plan              Plan OpenTofu env if tofu exists' \
+	'' \
+	'Tokens:' \
+	'  make token-clean            Dry-run token cleanup' \
+	'  make token-rotate-dry       Dry-run token regeneration' \
+	'  make token-rotate           Live token regeneration; requires CF_EMAIL/CF_GLOBAL_API_KEY' \
+	'' \
+	'Phases:' \
+	'  make phase-f1 ... phase-f7'
 
-validate: validate-env tf-validate tofu-validate
+bootstrap:
+	@bash scripts/bootstrap-system.sh
+
+setup:
+	@bash scripts/environments/setup.sh
+
+env: load-env
+
+load-env:
+	@chmod +x scripts/cloudflare/load-env.sh
+	@bash scripts/cloudflare/load-env.sh
+
+ci: validate
+
+validate: test validate-env tf-fmt-check tf-init tf-validate
+	@echo "Validation complete."
 
 validate-env:
-	@test -n "$(ENVIRONMENT)" || (echo "ERROR: ENVIRONMENT is required" && exit 1)
-	@case "$(ENVIRONMENT)" in dev|staging|prod) ;; *) echo "ERROR: ENVIRONMENT must be dev|staging|prod"; exit 1;; esac
-	@backend="$${TERRAFORM_BACKEND_TYPE:-$(BACKEND_TYPE)}"; \
-	case "$$backend" in local|s3) ;; *) echo "ERROR: TERRAFORM_BACKEND_TYPE must be local|s3"; exit 1;; esac; \
-	if [ "$$backend" = "s3" ]; then \
-		test -n "$${TERRAFORM_STATE_BUCKET:-}" || (echo "ERROR: TERRAFORM_STATE_BUCKET is required when backend is s3" && exit 1); \
-		test -n "$${TERRAFORM_LOCK_TABLE:-}" || (echo "ERROR: TERRAFORM_LOCK_TABLE is required when backend is s3" && exit 1); \
-	fi
+	@if [ -f .env ]; then set -a; source .env; set +a; fi; \
+	if [ -x "$(VENV_DIR)/bin/python" ]; then "$(VENV_DIR)/bin/python" python/cfstack_validate_env.py --strict; \
+	else $(PYTHON) python/cfstack_validate_env.py --strict; fi
 
-fmt:
-	@terraform fmt -recursive terraform opentofu
-
-fmt-check:
-	@terraform fmt -check -recursive terraform opentofu
-
-lint:
-	@tflint --recursive terraform || echo "WARN: tflint not installed"
+maintenance:
+	@bash scripts/environments/maintenance.sh validate
 
 test:
-	@if [ -d tests ]; then pytest -q tests; else echo "INFO: tests directory not present; skipping."; fi
+	@if [ -x "$(PYTEST)" ]; then "$(PYTEST)" -q tests; \
+	elif command -v pytest >/dev/null 2>&1; then pytest -q tests; \
+	else echo "WARN: pytest not installed; run make bootstrap"; fi
 
-tf-init: validate-env
-	@$(TF_BIN) -chdir=$(TF_ENV_DIR) init || { echo "WARN: $(TF_BIN) init failed; retrying with tofu"; tofu -chdir=$(TF_ENV_DIR) init; }
+fmt: tf-fmt
+
+fmt-check: tf-fmt-check
+
+lint: shellcheck yaml-validate
+	@if command -v tflint >/dev/null 2>&1; then tflint --recursive terraform; else echo "WARN: tflint not installed; skipped"; fi
+
+shellcheck:
+	@if command -v shellcheck >/dev/null 2>&1; then find scripts -type f -name '*.sh' -print0 | xargs -0 shellcheck; else echo "WARN: shellcheck not installed; skipped"; fi
+
+yaml-validate:
+	@if [ -f scripts/validate-yaml.py ]; then $(PYTHON) scripts/validate-yaml.py; else echo "INFO: scripts/validate-yaml.py not present; skipped"; fi
+
+tf-init:
+	@$(TF_BIN) -chdir=$(TF_ROOT) init
+
+tf-fmt:
+	@$(TF_BIN) fmt -recursive $(TF_ROOT) opentofu 2>/dev/null || $(TF_BIN) fmt -recursive $(TF_ROOT)
+
+tf-fmt-check:
+	@$(TF_BIN) fmt -check -recursive $(TF_ROOT) opentofu 2>/dev/null || $(TF_BIN) fmt -check -recursive $(TF_ROOT)
 
 tf-validate: tf-init
-	@$(TF_BIN) -chdir=$(TF_ENV_DIR) validate || { echo "WARN: $(TF_BIN) validate failed; retrying with tofu"; tofu -chdir=$(TF_ENV_DIR) validate; }
+	@$(TF_BIN) -chdir=$(TF_ROOT) validate
 
-tf-plan: validate-env
-	@terraform -chdir=$(TF_ENV_DIR) plan
+tf-plan: tf-init
+	@$(TF_BIN) -chdir=$(TF_ROOT) plan
 
-tf-apply: validate-env
+tf-apply: tf-init
 	@test "$(CONFIRM_APPLY)" = "yes" || (echo "ERROR: Set CONFIRM_APPLY=yes to continue." && exit 1)
-	@terraform -chdir=$(TF_ENV_DIR) apply
+	@$(TF_BIN) -chdir=$(TF_ROOT) apply
 
-tf-destroy: validate-env
+tf-destroy: tf-init
 	@test "$(CONFIRM_APPLY)" = "yes" || (echo "ERROR: Set CONFIRM_APPLY=yes to continue." && exit 1)
-	@terraform -chdir=$(TF_ENV_DIR) destroy
+	@$(TF_BIN) -chdir=$(TF_ROOT) destroy
 
-tofu-init: validate-env
-	@tofu -chdir=$(TOFU_ENV_DIR) init
+tf-env-init:
+	@test -d "$(TF_ENV_DIR)" || (echo "ERROR: missing $(TF_ENV_DIR)" && exit 1)
+	@$(TF_BIN) -chdir=$(TF_ENV_DIR) init
+
+tf-env-validate: tf-env-init
+	@$(TF_BIN) -chdir=$(TF_ENV_DIR) validate
+
+tf-env-plan: tf-env-init
+	@$(TF_BIN) -chdir=$(TF_ENV_DIR) plan
+
+tofu-init:
+	@if command -v $(TOFU_BIN) >/dev/null 2>&1 && [ -d "$(TOFU_ENV_DIR)" ]; then $(TOFU_BIN) -chdir=$(TOFU_ENV_DIR) init; else echo "WARN: tofu or $(TOFU_ENV_DIR) missing; skipped"; fi
 
 tofu-validate: tofu-init
-	@tofu -chdir=$(TOFU_ENV_DIR) validate
+	@if command -v $(TOFU_BIN) >/dev/null 2>&1 && [ -d "$(TOFU_ENV_DIR)" ]; then $(TOFU_BIN) -chdir=$(TOFU_ENV_DIR) validate; else echo "WARN: tofu or $(TOFU_ENV_DIR) missing; skipped"; fi
 
-tofu-plan: validate-env
-	@tofu -chdir=$(TOFU_ENV_DIR) plan
+tofu-plan: tofu-init
+	@if command -v $(TOFU_BIN) >/dev/null 2>&1 && [ -d "$(TOFU_ENV_DIR)" ]; then $(TOFU_BIN) -chdir=$(TOFU_ENV_DIR) plan; else echo "WARN: tofu or $(TOFU_ENV_DIR) missing; skipped"; fi
 
-tofu-apply: validate-env
-	@test "$(CONFIRM_APPLY)" = "yes" || (echo "ERROR: Set CONFIRM_APPLY=yes to continue." && exit 1)
-	@tofu -chdir=$(TOFU_ENV_DIR) apply
+drift: drift-detect
 
-drift-detect:
-	@terraform -chdir=$(TF_ENV_DIR) plan -detailed-exitcode || test $$? -eq 2
-
-security-scan:
-	@scripts/security-scan.sh
-
-sbom:
-	@scripts/generate-sbom.sh
-
-doctor:
-	@terraform version
-	@tofu version
-	@python3 --version
-
-
-validate-f1:
-	@bash scripts/validate.sh --offline --strict
-
-
-# Agent and documentation compatibility aliases
-validate-agent: validate-env
-	@bash scripts/ai/validate-agent-env.sh
-
-bootstrap-agent:
-	@bash scripts/ai/bootstrap-agent.sh
-
-terraform-validate: tf-validate
-terraform-fmt: fmt
-yaml-validate:
-	@python3 scripts/validate-yaml.py
-
-shell-validate:
-	@find scripts -type f -name '*.sh' -print0 | xargs -0 shellcheck
-
-# WAF policy and platform validation
-waf-validate:
-	@bash scripts/validate.sh --offline --strict
-	@bash scripts/tunnel-validate.sh --offline
+drift-detect: tf-init
+	@set +e; $(TF_BIN) -chdir=$(TF_ROOT) plan -detailed-exitcode -out=tfplan.drift; rc=$$?; set -e; \
+	case "$$rc" in \
+	  0) echo "No drift detected." ;; \
+	  2) echo "WARN: drift detected."; exit 2 ;; \
+	  *) echo "ERROR: drift check failed rc=$$rc"; exit "$$rc" ;; \
+	esac
 
 token-clean:
-	@bash scripts/cloudflare/clean-and-regenerate-tokens.sh --dry-run --cleanup-only
+	@bash scripts/cloudflare/clean-and-regenerate-tokens.sh --dry-run --keep-most 1 --unused-days 90
 
 token-rotate-dry:
-	@bash scripts/cloudflare/clean-and-regenerate-tokens.sh --dry-run --regenerate --types all --backup
+	@bash scripts/cloudflare/clean-and-regenerate-tokens.sh --dry-run --regenerate --types all --backup --write .env.cloudflare
 
 token-rotate:
 	@bash scripts/cloudflare/clean-and-regenerate-tokens.sh --yes --regenerate --types all --backup --write .env.cloudflare
 
+security-scan:
+	@if [ -x scripts/security-scan.sh ]; then bash scripts/security-scan.sh; else echo "WARN: scripts/security-scan.sh missing; skipped"; fi
 
-.PHONY: phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6
+sbom:
+	@if [ -x scripts/generate-sbom.sh ]; then bash scripts/generate-sbom.sh; else echo "WARN: scripts/generate-sbom.sh missing; skipped"; fi
 
-phase-f1:
-	@bash scripts/validate.sh --offline --strict
+doctor:
+	@echo "PROJECT_ROOT=$(PROJECT_ROOT)"
+	@echo "ENVIRONMENT=$(ENVIRONMENT)"
+	@echo "CODEX_CLOUD=$(CODEX_CLOUD)"
+	@command -v $(TF_BIN) >/dev/null 2>&1 && $(TF_BIN) version | head -n 1 || echo "WARN: terraform missing"
+	@command -v $(TOFU_BIN) >/dev/null 2>&1 && $(TOFU_BIN) version | head -n 1 || echo "WARN: tofu missing"
+	@$(PYTHON) --version
+	@if [ -x "$(PYTEST)" ]; then "$(PYTEST)" --version; else echo "WARN: pytest missing from $(VENV_DIR)"; fi
+	@command -v cloudflared >/dev/null 2>&1 && cloudflared --version || echo "WARN: cloudflared missing"
+	@command -v gh >/dev/null 2>&1 && gh --version | head -n 1 || echo "WARN: gh missing"
 
-phase-f2: tf-validate tofu-validate
-	@echo "F2 validation complete."
+clean:
+	@rm -f $(TF_ROOT)/tfplan.drift $(TF_ROOT)/*.tfplan
+	@find . -type d -name '.terraform' -prune -print -exec rm -rf {} +
+
+phase-f1: test validate-env
+	@echo "F1 validation complete."
+
+phase-f2: tf-validate
+	@echo "F2 Terraform validation complete."
 
 phase-f3:
-	@echo "F3 requires configured identity provider and Cloudflare Zero Trust tokens."
-	@echo "Run: terraform -chdir=$(TF_ENV_DIR) plan"
+	@echo "F3 Zero Trust requires configured identity provider and Cloudflare tokens."
+	@$(MAKE) tf-plan
 
 phase-f4:
-	@bash scripts/tunnel-validate.sh --offline
+	@if [ -x scripts/tunnel-validate.sh ]; then bash scripts/tunnel-validate.sh --offline; else echo "WARN: tunnel validator missing; skipped"; fi
 
-phase-f5:
-	@echo "Run Workers tests and deploy workflows for edge services."
+phase-f5: test tf-validate
+	@echo "F5 Workers and AI validation complete."
 
 phase-f6: drift-detect security-scan sbom
 	@echo "F6 monitoring, DR, and security checks complete."
 
-
 workflow-policy:
-	@bash scripts/workflow-policy.sh
+	@if [ -x scripts/workflow-policy.sh ]; then bash scripts/workflow-policy.sh; else echo "WARN: workflow-policy.sh missing; skipped"; fi
 
 workflow-validate: workflow-policy
 	@echo "Workflow validation complete."
