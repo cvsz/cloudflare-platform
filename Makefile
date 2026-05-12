@@ -6,6 +6,8 @@ ENVIRONMENT ?= dev
 BACKEND_TYPE ?= local
 TF_ENV_DIR := terraform/environments/$(ENVIRONMENT)
 TOFU_ENV_DIR := opentofu/environments/$(ENVIRONMENT)
+TF_BIN ?= terraform
+
 
 .PHONY: help validate validate-env fmt fmt-check lint test tf-init tf-validate tf-plan tf-apply tf-destroy tofu-init tofu-validate tofu-plan tofu-apply drift-detect security-scan sbom doctor
 
@@ -37,10 +39,10 @@ test:
 	@if [ -d tests ]; then pytest -q tests; else echo "INFO: tests directory not present; skipping."; fi
 
 tf-init: validate-env
-	@terraform -chdir=$(TF_ENV_DIR) init
+	@$(TF_BIN) -chdir=$(TF_ENV_DIR) init || { echo "WARN: $(TF_BIN) init failed; retrying with tofu"; tofu -chdir=$(TF_ENV_DIR) init; }
 
 tf-validate: tf-init
-	@terraform -chdir=$(TF_ENV_DIR) validate
+	@$(TF_BIN) -chdir=$(TF_ENV_DIR) validate || { echo "WARN: $(TF_BIN) validate failed; retrying with tofu"; tofu -chdir=$(TF_ENV_DIR) validate; }
 
 tf-plan: validate-env
 	@terraform -chdir=$(TF_ENV_DIR) plan
