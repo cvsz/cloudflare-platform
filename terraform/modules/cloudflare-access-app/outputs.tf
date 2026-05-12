@@ -4,5 +4,5 @@ output "module_name" {
 
 output "application_id" {
   description = "Cloudflare Access application ID"
-  value       = cloudflare_access_application.this.id
+  value       = cloudflare_zero_trust_access_application.this.id
 }
