@@ -412,9 +412,11 @@ if [[ -n "${OUT_FILE:-}" ]]; then
   fi
 
   # Ensure account-level keys (preserve env values if set)
-  printf 'CF_ACCOUNT_ID="%s"\n' "${CF_ACCOUNT_ID:-}" >> "${TMP}"
-  printf 'CF_ZONE_ID="%s"\n' "${CF_ZONE_ID:-}" >> "${TMP}"
-  printf 'CF_API_TOKEN="%s"\n\n' "${CF_API_TOKEN:-}" >> "${TMP}"
+  {
+    printf 'CF_ACCOUNT_ID="%s"\n' "${CF_ACCOUNT_ID:-}"
+    printf 'CF_ZONE_ID="%s"\n' "${CF_ZONE_ID:-}"
+    printf 'CF_API_TOKEN="%s"\n\n' "${CF_API_TOKEN:-}"
+  } >> "${TMP}"
 
   # Append token keys (use generated values, else preserve env or template value)
   for key in CF_DNS_TOKEN CF_ZT_TOKEN CF_WORKERS_TOKEN CF_WAF_TOKEN CF_TUNNEL_TOKEN CF_R2_TOKEN; do

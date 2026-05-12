@@ -12,12 +12,12 @@ cloudflare_api_check() {
     -H 'Content-Type: application/json' \
     https://api.cloudflare.com/client/v4/user/tokens/verify)"
 
-  printf '%s' "$payload" | python3 - "$expected_permission" <<'PY'
+  python3 - "$expected_permission" "$payload" <<'PY'
 import json
 import sys
 
 expected = sys.argv[1].lower()
-payload = json.load(sys.stdin)
+payload = json.loads(sys.argv[2])
 if not payload.get("success"):
     print("Cloudflare token verification failed", file=sys.stderr)
     sys.exit(1)
