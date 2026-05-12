@@ -6,12 +6,14 @@ STRICT_TOOLS="${STRICT_TOOLS:-false}"
 CODEX_CLOUD="${CODEX_CLOUD:-false}"
 SKIP_CORE="${SKIP_CORE:-false}"
 SKIP_TERRAFORM="${SKIP_TERRAFORM:-false}"
+SKIP_TFLINT="${SKIP_TFLINT:-false}"
 SKIP_CLOUDFLARED="${SKIP_CLOUDFLARED:-false}"
 SKIP_GH="${SKIP_GH:-false}"
 SKIP_PYTHON_DEPS="${SKIP_PYTHON_DEPS:-false}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 PYTHON_VENV_DIR="${PYTHON_VENV_DIR:-.venv}"
 USE_SYSTEM_PIP="${USE_SYSTEM_PIP:-false}"
+TFLINT_VERSION="${TFLINT_VERSION:-latest}"
 
 log(){ printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 info(){ log "INFO: $*"; }
@@ -92,7 +94,7 @@ install_core(){
     apt) install_packages curl wget unzip jq git make python3 python3-pip python3-venv ca-certificates gnupg lsb-release software-properties-common ;;
     dnf|yum) install_packages curl wget unzip jq git make python3 python3-pip ca-certificates gnupg2 ;;
     apk) install_packages curl wget unzip jq git make python3 py3-pip ca-certificates gnupg bash ;;
-    brew) install_packages curl wget jq git make python ca-certificates gnupg ;;
+    brew) install_packages curl wget jq git make python ca-certificates gnupg unzip ;;
     *) strict_skip "core dependency install unavailable on this platform" ;;
   esac
 }
@@ -123,11 +125,53 @@ install_terraform(){
     apk) install_packages terraform ;;
     *) strict_skip "Terraform install unavailable: no supported package manager" ;;
   esac
-  if has terraform; then
-    terraform version | head -n 1 || true
+  if has terraform; then terraform version | head -n 1 || true; else strict_skip "terraform verification failed"; fi
+}
+
+install_tflint(){
+  [[ "$SKIP_TFLINT" == "true" ]] && { warn "SKIP_TFLINT=true; skipped tflint install"; return 0; }
+  has tflint && { info "tflint already installed: $(tflint --version | head -n 1 || true)"; return 0; }
+
+  info "installing tflint for $OS/$ARCH_CANON"
+  case "$PKG_MANAGER" in
+    brew)
+      brew install tflint || strict_skip "tflint install failed"
+      return 0
+      ;;
+    apk)
+      install_packages tflint || true
+      has tflint && return 0
+      ;;
+  esac
+
+  has curl || install_packages curl
+  has unzip || install_packages unzip
+
+  local os_name asset versioned_url tmp_dir zip_path
+  case "$OS" in
+    linux) os_name="linux" ;;
+    darwin) os_name="darwin" ;;
+    *) strict_skip "tflint auto-install unsupported for OS: $OS"; return 0 ;;
+  esac
+
+  case "$ARCH_CANON" in
+    amd64|arm64) ;;
+    *) strict_skip "tflint auto-install unsupported for architecture: $ARCH_CANON"; return 0 ;;
+  esac
+
+  if [[ "$TFLINT_VERSION" == "latest" ]]; then
+    versioned_url="https://github.com/terraform-linters/tflint/releases/latest/download/tflint_${os_name}_${ARCH_CANON}.zip"
   else
-    strict_skip "terraform verification failed"
+    versioned_url="https://github.com/terraform-linters/tflint/releases/download/${TFLINT_VERSION}/tflint_${os_name}_${ARCH_CANON}.zip"
   fi
+
+  tmp_dir="$(mktemp -d)"
+  zip_path="$tmp_dir/tflint.zip"
+  curl -fsSL "$versioned_url" -o "$zip_path" || { rm -rf "$tmp_dir"; strict_skip "tflint download failed"; return 0; }
+  unzip -q "$zip_path" -d "$tmp_dir" || { rm -rf "$tmp_dir"; strict_skip "tflint unzip failed"; return 0; }
+  run_root install -m 0755 "$tmp_dir/tflint" /usr/local/bin/tflint || { rm -rf "$tmp_dir"; strict_skip "tflint install failed"; return 0; }
+  rm -rf "$tmp_dir"
+  has tflint && tflint --version | head -n 1 || strict_skip "tflint verification failed"
 }
 
 venv_python(){ printf '%s/bin/python' "$PROJECT_ROOT/$PYTHON_VENV_DIR"; }
@@ -198,18 +242,9 @@ print_versions(){
   echo "CODEX_CLOUD: $CODEX_CLOUD"
   echo "STRICT_TOOLS: $STRICT_TOOLS"
 
-  if has terraform; then
-    terraform version | head -n 1 || true
-  else
-    warn "terraform not installed"
-  fi
-
-  if has "$PYTHON_BIN"; then
-    "$PYTHON_BIN" --version || true
-  else
-    warn "$PYTHON_BIN not installed"
-  fi
-
+  if has terraform; then terraform version | head -n 1 || true; else warn "terraform not installed"; fi
+  if has tflint; then tflint --version | head -n 1 || true; else warn "tflint not installed"; fi
+  if has "$PYTHON_BIN"; then "$PYTHON_BIN" --version || true; else warn "$PYTHON_BIN not installed"; fi
   if [[ -x "$(venv_python)" ]]; then "$(venv_python)" --version || true; fi
   if [[ -x "$(venv_pip)" ]]; then "$(venv_pip)" --version || true; fi
 
@@ -219,18 +254,8 @@ print_versions(){
     warn "pytest not installed in venv"
   fi
 
-  if has cloudflared; then
-    cloudflared --version || true
-  else
-    warn "cloudflared not installed"
-  fi
-
-  if has gh; then
-    gh --version | head -n 1 || true
-  else
-    warn "gh not installed"
-  fi
-
+  if has cloudflared; then cloudflared --version || true; else warn "cloudflared not installed"; fi
+  if has gh; then gh --version | head -n 1 || true; else warn "gh not installed"; fi
   echo
 }
 
@@ -239,6 +264,7 @@ main(){
   [[ "$CODEX_CLOUD" == "true" ]] && info "CODEX_CLOUD=true"
   install_core
   install_terraform
+  install_tflint
   install_python_deps
   install_cloudflared
   install_gh
