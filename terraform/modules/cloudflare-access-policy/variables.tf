@@ -37,6 +37,13 @@ variable "include_groups" {
   description = "Zero Trust group IDs to include."
 }
 
+variable "include_email_domains" {
+  type        = list(string)
+  nullable    = false
+  default     = []
+  description = "Fallback email domains allowed when no groups are configured."
+}
+
 variable "require_mfa" {
   type        = bool
   nullable    = false
