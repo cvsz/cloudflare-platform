@@ -36,4 +36,4 @@ jobs:
           path: |
             reports/policy
             tests/reports/policy
-          if-no-files-found: ignore
+          if-no-files-found: warn

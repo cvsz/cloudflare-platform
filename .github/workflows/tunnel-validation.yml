@@ -36,4 +36,4 @@ jobs:
           path: |
             reports/tunnel
             tunnels/**/*.json
-          if-no-files-found: ignore
+          if-no-files-found: warn

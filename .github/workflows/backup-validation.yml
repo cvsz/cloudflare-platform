@@ -38,4 +38,4 @@ jobs:
           path: |
             backups/snapshots
             reports/backup
-          if-no-files-found: ignore
+          if-no-files-found: warn
