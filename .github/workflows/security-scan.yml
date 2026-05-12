@@ -56,4 +56,4 @@ jobs:
             **/semgrep*.sarif
             **/trivy*.sarif
             **/gitleaks*.json
-          if-no-files-found: ignore
+          if-no-files-found: warn

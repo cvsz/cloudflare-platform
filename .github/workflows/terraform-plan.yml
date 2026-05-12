@@ -52,4 +52,4 @@ jobs:
           path: |
             terraform/**/*.tfplan
             terraform/**/plan-*.txt
-          if-no-files-found: ignore
+          if-no-files-found: warn

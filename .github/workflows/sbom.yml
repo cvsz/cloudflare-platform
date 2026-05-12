@@ -44,4 +44,4 @@ jobs:
             artifacts.sbom.spdx.json
             **/*.sig
             **/*.att
-          if-no-files-found: ignore
+          if-no-files-found: warn
