@@ -50,11 +50,23 @@ require_env(){
   [[ "$miss" -eq 0 ]]
 }
 
+normalize_plan_tier(){
+  local raw="${CLOUDFLARE_PLAN_TIER:-Free}"
+  case "${raw,,}" in
+    free) CLOUDFLARE_PLAN_TIER="Free" ;;
+    pro) CLOUDFLARE_PLAN_TIER="Pro" ;;
+    business) CLOUDFLARE_PLAN_TIER="Business" ;;
+    enterprise) CLOUDFLARE_PLAN_TIER="Enterprise" ;;
+    *) CLOUDFLARE_PLAN_TIER="$raw" ;;
+  esac
+  export CLOUDFLARE_PLAN_TIER
+}
+
 validate_plan(){
-  local plan="${CLOUDFLARE_PLAN_TIER:-Free}"
-  case "$plan" in
-    Free|Pro|Business|Enterprise) info "detected plan tier $plan" ;;
-    *) warn "invalid CLOUDFLARE_PLAN_TIER=$plan"; return 1 ;;
+  normalize_plan_tier
+  case "$CLOUDFLARE_PLAN_TIER" in
+    Free|Pro|Business|Enterprise) info "detected plan tier $CLOUDFLARE_PLAN_TIER" ;;
+    *) warn "invalid CLOUDFLARE_PLAN_TIER=$CLOUDFLARE_PLAN_TIER"; return 1 ;;
   esac
 }
 
@@ -77,16 +89,12 @@ backup_config(){
   local ts archive
   ts="$(date -u +%Y%m%dT%H%M%SZ)"
   archive="$BACKUP_DIR/config-$ts.tgz"
-  tar -czf "$archive" \
-    -C "$PROJECT_ROOT" \
-    terraform docs scripts .env.example 2>/dev/null || warn "backup archive created with partial content"
+  tar -czf "$archive" -C "$PROJECT_ROOT" terraform docs scripts .env.example 2>/dev/null || warn "backup archive created with partial content"
   chmod 600 "$archive" 2>/dev/null || true
   info "backup saved: $archive"
 }
 
-rollback(){
-  warn "rollback invoked; no destructive install action was applied"
-}
+rollback(){ warn "rollback invoked; no destructive install action was applied"; }
 trap rollback ERR
 
 load_env
