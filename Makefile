@@ -137,3 +137,16 @@ phase-f5:
 
 phase-f6: drift-detect security-scan sbom
 	@echo "F6 monitoring, DR, and security checks complete."
+
+
+workflow-policy:
+	@bash scripts/workflow-policy.sh
+
+workflow-validate: workflow-policy
+	@echo "Workflow validation complete."
+
+gitops-validate: workflow-validate drift-detect
+	@echo "GitOps validation complete."
+
+phase-f7: gitops-validate
+	@echo "F7 GitOps workflow and policy checks complete."

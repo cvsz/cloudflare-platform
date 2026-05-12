@@ -9,6 +9,7 @@ permissions:
 jobs:
   cloudflared-config-validation:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Validate shell scripts syntax
