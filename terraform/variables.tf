@@ -55,3 +55,59 @@ variable "plan_tier" {
     error_message = "plan_tier must be one of Free, Pro, Business, Enterprise"
   }
 }
+
+variable "environment" {
+  type        = string
+  description = "Deployment environment name"
+  nullable    = false
+  default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "environment must be one of dev, staging, prod"
+  }
+}
+
+variable "identity_provider_type" {
+  type        = string
+  description = "Identity provider type for Zero Trust"
+  nullable    = false
+  default     = "saml"
+
+  validation {
+    condition     = contains(["saml", "oidc"], var.identity_provider_type)
+    error_message = "identity_provider_type must be saml or oidc"
+  }
+}
+
+variable "identity_provider_metadata_url" {
+  type        = string
+  description = "HTTPS metadata URL for SAML configuration"
+  nullable    = false
+  validation {
+    condition     = can(regex("^https://", var.identity_provider_metadata_url))
+    error_message = "identity_provider_metadata_url must start with https://"
+  }
+}
+
+variable "oidc_issuer_url" {
+  type        = string
+  description = "OIDC issuer URL"
+  nullable    = true
+  default     = null
+}
+
+variable "oidc_client_id" {
+  type        = string
+  description = "OIDC client ID"
+  nullable    = true
+  default     = null
+}
+
+variable "oidc_client_secret" {
+  type        = string
+  description = "OIDC client secret"
+  nullable    = true
+  default     = null
+  sensitive   = true
+}

@@ -1,13 +1,18 @@
-# Identity Providers (F3.2)
-
-`zero-trust/identity-providers.yaml` provides SAML and OIDC-capable templates.
+# Identity Configuration
 
 ## SAML Providers
-- `zeazdev-ai-saml`
-- `zeazdev-finance-saml`
+`zero-trust/identity-providers.yaml` defines two SAML providers:
+- `zeazdev-ai-saml` with attributes: `email`, `name`, `username`, `groups`, `role`, `ai_access`, `publishing_access`.
+- `zeazdev-finance-saml` with attributes: `email`, `name`, `username`, `groups`, `role`, `wallet_access`, `crypto_access`.
 
-Metadata URLs are validated as HTTPS in Terraform module inputs.
-SAML private keys are never stored in this repository and must be supplied from external secret stores.
+Header contracts:
+- AI: `CF-ZVEO-User`, `CF-ZVEO-Role`, `CF-ZVEO-Groups`
+- Finance: `CF-ZPAY-User`, `CF-ZPAY-Role`, `CF-ZPAY-Groups`
 
-## OIDC Alternative
-When `IDENTITY_PROVIDER_TYPE=oidc`, the module provisions OIDC IdPs with runtime values from secure environment variables.
+## OIDC Fallback
+OIDC is supported by setting `identity_provider_type=oidc` and passing issuer/client values securely at runtime.
+
+## RBAC Model
+Defined in `zero-trust/policies.yaml`:
+- AI groups: `zveo-admin`, `zveo-creator`, `zveo-publisher`, `zveo-analytics`
+- Finance groups: `wallet-admin`, `wallet-operator`, `treasury`, `compliance`, `wallet-auditor`
