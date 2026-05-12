@@ -1,15 +1,22 @@
-# Fintech Security Profiles (F3.3)
+# Fintech Security Controls
 
-Applies to `app`, `pay`, `treasury`, and `admin-wallet` domains.
+Applies to `app.zeaz.dev`, `pay.zeaz.dev`, `treasury.zeaz.dev`, and `admin-wallet.zeaz.dev`.
 
-Required controls:
-- MFA and WebAuthn.
-- Session TTL <= 4h.
-- Step-up authentication.
-- Geo restriction hooks.
-- JWT verification.
-- Sensitive action re-authentication.
+## Mandatory Controls
+- MFA required
+- WebAuthn and hardware security keys required
+- Session TTL capped at 4 hours
+- Step-up authentication for sensitive operations
+- Geo restriction hooks for country allowlisting
+- JWT verification for protected APIs
+- Audit logging hooks enabled
 
-Enterprise-only controls are gated:
-- mTLS Client Auth (Enterprise plan only)
-- API Shield (Enterprise plan only)
+## Enterprise-Gated Controls
+`policies/fintech-access.yaml` marks mTLS client auth and API Shield as enabled only on `Enterprise` plan.
+
+## JWT Policy
+`policies/fintech-jwt.yaml` enforces:
+- required JWT validation
+- strict claim requirements (`sub`, `exp`, `iat`, `iss`, `aud`, `scope`)
+- bounded clock skew
+- sensitive path coverage for transfer, withdraw, and payout operations
