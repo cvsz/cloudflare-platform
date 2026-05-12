@@ -12,3 +12,8 @@ terraform {
 provider "cloudflare" {
   api_token = var.cf_dns_token
 }
+
+provider "cloudflare" {
+  alias     = "waf"
+  api_token = var.cf_waf_token
+}
