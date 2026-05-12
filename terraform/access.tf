@@ -80,13 +80,12 @@ module "identity_provider_finance" {
 module "access_application" {
   for_each = local.access_apps
 
-  source                 = "./modules/cloudflare-access-app"
-  account_id             = var.cf_account_id
-  name                   = "zeazdev-${var.environment}-${replace(each.key, "_", "-")}"
-  domain                 = each.value.domain
-  session_duration       = each.value.session_duration
-  allowed_idps           = each.value.allowed_idps
-  service_tokens_enabled = true
+  source           = "./modules/cloudflare-access-app"
+  account_id       = var.cf_account_id
+  name             = "zeazdev-${var.environment}-${replace(each.key, "_", "-")}"
+  domain           = each.value.domain
+  session_duration = each.value.session_duration
+  allowed_idps     = each.value.allowed_idps
 }
 
 module "access_policy" {
