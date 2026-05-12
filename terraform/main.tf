@@ -10,7 +10,7 @@ module "dns" {
     auth = {
       name    = "auth"
       type    = "CNAME"
-      value   = "auth.${var.domain}"
+      value   = "zveo.${var.domain}"
       ttl     = 1
       proxied = true
       comment = "Authentication endpoint"
@@ -19,7 +19,7 @@ module "dns" {
     api = {
       name    = "api"
       type    = "CNAME"
-      value   = "api.${var.domain}"
+      value   = "app.${var.domain}"
       ttl     = 1
       proxied = true
       comment = "Primary API endpoint"
