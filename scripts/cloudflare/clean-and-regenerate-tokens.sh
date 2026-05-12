@@ -324,10 +324,12 @@ if [[ -f "$OUT_FILE" ]]; then
   done < "$OUT_FILE"
 fi
 
-printf 'CF_ACCOUNT_ID="%s"\n' "${CF_ACCOUNT_ID:-$(env_file_value "$OUT_FILE" CF_ACCOUNT_ID)}" >> "$tmp"
-printf 'CF_ZONE_ID="%s"\n' "${CF_ZONE_ID:-$(env_file_value "$OUT_FILE" CF_ZONE_ID)}" >> "$tmp"
-printf 'CF_AI_GATEWAY_SLUG="%s"\n' "${CF_AI_GATEWAY_SLUG:-$(env_file_value "$OUT_FILE" CF_AI_GATEWAY_SLUG || true)}" | sed 's/=""$/="zeaz"/' >> "$tmp"
-printf '\n' >> "$tmp"
+{
+  printf 'CF_ACCOUNT_ID="%s"\n' "${CF_ACCOUNT_ID:-$(env_file_value "$OUT_FILE" CF_ACCOUNT_ID)}"
+  printf 'CF_ZONE_ID="%s"\n' "${CF_ZONE_ID:-$(env_file_value "$OUT_FILE" CF_ZONE_ID)}"
+  printf 'CF_AI_GATEWAY_SLUG="%s"\n' "${CF_AI_GATEWAY_SLUG:-$(env_file_value "$OUT_FILE" CF_AI_GATEWAY_SLUG || true)}" | sed 's/=""$/="zeaz"/'
+  printf '\n'
+} >> "$tmp"
 
 for t in dns zt workers waf tunnel r2; do
   key="${ENV_KEY_MAP[$t]}"
@@ -340,8 +342,10 @@ for t in dns zt workers waf tunnel r2; do
   fi
 done
 
-printf 'CF_AUDIT_TOKEN="%s"\n' "${CF_AUDIT_TOKEN:-$(env_file_value "$OUT_FILE" CF_AUDIT_TOKEN)}" >> "$tmp"
-printf 'CF_AI_GATEWAY_TOKEN="%s"\n' "${CF_AI_GATEWAY_TOKEN:-$(env_file_value "$OUT_FILE" CF_AI_GATEWAY_TOKEN)}" >> "$tmp"
+{
+  printf 'CF_AUDIT_TOKEN="%s"\n' "${CF_AUDIT_TOKEN:-$(env_file_value "$OUT_FILE" CF_AUDIT_TOKEN)}"
+  printf 'CF_AI_GATEWAY_TOKEN="%s"\n' "${CF_AI_GATEWAY_TOKEN:-$(env_file_value "$OUT_FILE" CF_AI_GATEWAY_TOKEN)}"
+} >> "$tmp"
 
 if $DRY_RUN; then
   log "DRY-RUN: preview of $OUT_FILE"

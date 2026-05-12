@@ -114,7 +114,7 @@ main() {
   local cf_api_token cf_dns_token cf_zt_token cf_workers_token cf_waf_token cf_tunnel_token cf_r2_token
   local cf_audit_token cf_ai_gateway_token
 
-  cf_api_token="${CF_API_TOKEN}"
+  cf_api_token="${CF_API_TOKEN:-}"
   cf_dns_token="$(create_token "zeaz-dns-token" "$(policy_dns)")"
   cf_zt_token="$(create_token "zeaz-zt-token" "$(policy_zt)")"
   cf_workers_token="$(create_token "zeaz-workers-token" "$(policy_workers)")"

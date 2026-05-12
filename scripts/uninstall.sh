@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-# shellcheck source=./common.sh
+# shellcheck disable=SC1091
 source "$(cd "$(dirname "$0")" && pwd)/common.sh"
 
 rollback(){ warn "rollback invoked (no destructive changes were applied yet)"; }
