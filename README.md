@@ -78,7 +78,7 @@ Token lifecycle:        scripts/cloudflare/clean-and-regenerate-tokens.sh (wrapp
 | sops | 3.8+ | https://github.com/getsops/sops/releases |
 | shellcheck | 0.9+ | `apt install shellcheck` / `brew install shellcheck` |
 | python3 | 3.10+ | https://python.org (for yaml-validate target) |
-| pyyaml | any | `pip install pyyaml` |
+| Python test deps | pinned | `python3 -m pip install -r requirements-dev.txt` |
 
 > **Cloudflare account:** You need a Cloudflare account with `zeaz.dev` added as a zone.
 > Use scoped API tokens for all operations; avoid Global API Key usage in automation.
@@ -113,6 +113,7 @@ This runs `scripts/ai/bootstrap-agent.sh` which validates your environment, chec
 ```bash
 make validate-agent        # check env vars and API token scopes
 make terraform-validate    # init + validate all Terraform modules
+python3 -m pip install -r requirements-dev.txt
 make yaml-validate         # lint all .yml files
 make shell-validate        # shellcheck all scripts
 ```
