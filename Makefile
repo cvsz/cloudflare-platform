@@ -33,13 +33,13 @@ help:
 	'Bootstrap:' \
 	'  make bootstrap              Install/check local tools and Python venv' \
 	'  make setup                  Generate/preserve .env using setup script' \
-	'  make env                    Validate/load environment' \
+	'  make env                    Load environment only; no strict validation' \
 	'  make load-env               Load Cloudflare env helper' \
 	'' \
 	'Validation:' \
 	'  make validate               Run tests + env + Terraform validation' \
 	'  make ci                     Alias for validate' \
-	'  make validate-env           Run Python env validator' \
+	'  make validate-env           Run strict Python env validator' \
 	'  make maintenance            Run scripts/environments/maintenance.sh validate' \
 	'  make test                   Run pytest suite' \
 	'  make fmt                    Terraform fmt recursive' \
@@ -78,7 +78,7 @@ bootstrap:
 setup:
 	@bash scripts/environments/setup.sh
 
-env: load-env validate-env
+env: load-env
 
 load-env:
 	@chmod +x scripts/cloudflare/load-env.sh
