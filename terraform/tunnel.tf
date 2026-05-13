@@ -5,6 +5,8 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "main" {
 }
 
 locals {
+  active_tunnel_id = "ef0355dd-8e90-45ed-a222-b5053794ed20"
+
   tunnel_hostnames = [
     "zeaz.dev",
     "app.zeaz.dev",
@@ -21,6 +23,6 @@ resource "cloudflare_record" "tunnel_cname" {
   zone_id  = var.cf_zone_id
   name     = each.value
   type     = "CNAME"
-  content  = "${cloudflare_zero_trust_tunnel_cloudflared.main.id}.cfargotunnel.com"
+  content  = "${local.active_tunnel_id}.cfargotunnel.com"
   proxied  = true
 }
