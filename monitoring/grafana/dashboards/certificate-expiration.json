@@ -1,0 +1,17 @@
+{
+  "id": null,
+  "uid": "certificate-expiration",
+  "title": "certificate-expiration",
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "certificate-expiration trend",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(rate(cloudflare_certificate_expiration_total[5m]))", "refId": "A"}]
+    }
+  ]
+}

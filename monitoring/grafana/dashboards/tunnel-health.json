@@ -1,0 +1,17 @@
+{
+  "id": null,
+  "uid": "tunnel-health",
+  "title": "tunnel-health",
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "tunnel-health trend",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(rate(cloudflare_tunnel_health_total[5m]))", "refId": "A"}]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": null,
+  "uid": "bot-attacks",
+  "title": "bot-attacks",
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "bot-attacks trend",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(rate(cloudflare_bot_attacks_total[5m]))", "refId": "A"}]
+    }
+  ]
+}

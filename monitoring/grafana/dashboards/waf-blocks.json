@@ -1,0 +1,17 @@
+{
+  "id": null,
+  "uid": "waf-blocks",
+  "title": "waf-blocks",
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "waf-blocks trend",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(rate(cloudflare_waf_blocks_total[5m]))", "refId": "A"}]
+    }
+  ]
+}

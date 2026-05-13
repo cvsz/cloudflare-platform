@@ -1,0 +1,17 @@
+{
+  "id": null,
+  "uid": "auth-failures",
+  "title": "auth-failures",
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "auth-failures trend",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(rate(cloudflare_auth_failures_total[5m]))", "refId": "A"}]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: workers-metrics
+          static_configs:
+            - targets: ['workers-metrics-exporter:9101']
+
+processors:
+  batch:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:8889
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [loki]
