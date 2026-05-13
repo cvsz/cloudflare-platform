@@ -61,6 +61,8 @@ if [[ "$START_PLACEHOLDER" == "true" ]]; then
   </body>
 </html>
 HTML
+  PYTHON_BIN="$(command -v python3 || true)"
+  [[ -n "$PYTHON_BIN" ]] || fail "python3 is required for placeholder origin"
   cat <<EOF | sudo tee "/etc/systemd/system/${SERVICE_NAME}.service" >/dev/null
 [Unit]
 Description=zWallet placeholder origin
@@ -69,7 +71,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/opt/zwallet-placeholder
-ExecStart=/usr/bin/python3 -m http.server ${PLACEHOLDER_PORT} --bind 127.0.0.1
+ExecStart=${PYTHON_BIN} -m http.server ${PLACEHOLDER_PORT} --bind 127.0.0.1
 Restart=always
 RestartSec=5
 
@@ -79,15 +81,28 @@ EOF
   sudo systemctl daemon-reload
   sudo systemctl enable --now "$SERVICE_NAME"
   sudo systemctl restart "$SERVICE_NAME"
+  sleep 2
+  if ! systemctl is-active --quiet "$SERVICE_NAME"; then
+    sudo systemctl --no-pager --full status "$SERVICE_NAME" || true
+    sudo journalctl -u "$SERVICE_NAME" -n 80 --no-pager || true
+    fail "$SERVICE_NAME did not become active"
+  fi
 fi
 
 log "checking local origin: $LOCAL_HEALTH_URL"
-if curl -fsSI "$LOCAL_HEALTH_URL" >/tmp/zwallet-local-health.headers 2>/tmp/zwallet-local-health.err; then
-  cat /tmp/zwallet-local-health.headers
-else
-  rc=$?
+for attempt in {1..30}; do
+  if curl -fsSI "$LOCAL_HEALTH_URL" >/tmp/zwallet-local-health.headers 2>/tmp/zwallet-local-health.err; then
+    cat /tmp/zwallet-local-health.headers
+    local_ok=true
+    break
+  fi
+  sleep 1
+done
+if [[ "${local_ok:-false}" != "true" ]]; then
   cat /tmp/zwallet-local-health.err 2>/dev/null || true
-  fail "local zwallet health failed rc=$rc"
+  sudo systemctl --no-pager --full status "$SERVICE_NAME" || true
+  sudo journalctl -u "$SERVICE_NAME" -n 80 --no-pager || true
+  fail "local zwallet health failed"
 fi
 
 log "checking public route: $PUBLIC_HEALTH_URL"
