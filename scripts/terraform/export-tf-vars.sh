@@ -27,18 +27,6 @@ load_file(){
   set +a
 }
 
-# Preserve explicit TF_VAR_* values from caller.
-: "${TF_VAR_cf_dns_token:=${CF_DNS_TOKEN:-}}"
-: "${TF_VAR_cf_zone_id:=${CF_ZONE_ID:-}}"
-: "${TF_VAR_cf_waf_token:=${CF_WAF_TOKEN:-}}"
-: "${TF_VAR_cf_account_id:=${CF_ACCOUNT_ID:-}}"
-: "${TF_VAR_domain:=${PRIMARY_DOMAIN:-zeaz.dev}}"
-: "${TF_VAR_plan_tier:=${CLOUDFLARE_PLAN_TIER:-Free}}"
-: "${TF_VAR_environment:=${ENVIRONMENT:-prod}}"
-: "${TF_VAR_identity_provider_type:=${IDENTITY_PROVIDER_TYPE:-saml}}"
-: "${TF_VAR_identity_provider_metadata_url:=${IDENTITY_PROVIDER_METADATA_URL:-}}"
-: "${TF_VAR_tunnel_secret:=${TUNNEL_SECRET:-dGVzdC10dW5uZWwtc2VjcmV0LWRldGVybWluaXN0aWM=}}"
-
 load_file "$TOKEN_ENV_FILE"
 load_file "$ENV_FILE"
 
@@ -52,5 +40,16 @@ export TF_VAR_environment="${TF_VAR_environment:-${ENVIRONMENT:-prod}}"
 export TF_VAR_identity_provider_type="${TF_VAR_identity_provider_type:-${IDENTITY_PROVIDER_TYPE:-saml}}"
 export TF_VAR_identity_provider_metadata_url="${TF_VAR_identity_provider_metadata_url:-${IDENTITY_PROVIDER_METADATA_URL:-}}"
 export TF_VAR_tunnel_secret="${TF_VAR_tunnel_secret:-${TUNNEL_SECRET:-dGVzdC10dW5uZWwtc2VjcmV0LWRldGVybWluaXN0aWM=}}"
+export TF_VAR_enable_waf="${TF_VAR_enable_waf:-${ENABLE_WAF:-false}}"
+
+case "${TF_VAR_enable_waf}" in
+  true|false) ;;
+  TRUE|True) export TF_VAR_enable_waf=true ;;
+  FALSE|False) export TF_VAR_enable_waf=false ;;
+  *)
+    printf 'ERROR: ENABLE_WAF/TF_VAR_enable_waf must be true or false, got: %s\n' "${TF_VAR_enable_waf}" >&2
+    exit 1
+    ;;
+esac
 
 exec "$@"
