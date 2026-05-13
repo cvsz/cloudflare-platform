@@ -34,3 +34,11 @@ bin/
 
 # Generated cloudflared config
 tunnels/cloudflared/config.yml
+.cloudflare-backups/
+.env.cloudflare
+.cloudflare-token-audit.log
+.venv/
+log.txt
+terraform/tfplan
+terraform/tfplan.drift
+terraform/**/*.tfplan
