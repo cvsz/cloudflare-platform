@@ -25,6 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Python test dependencies
+        run: python3 -m pip install --user pytest
+
       - name: Validate shell scripts syntax
         run: find scripts -type f -name '*.sh' -print0 | xargs -0 -r -I{} bash -n {}
 
