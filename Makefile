@@ -26,7 +26,7 @@ export STRICT_TOOLS
 export CODEX_CLOUD
 export STRICT_ENV
 
-.PHONY: help bootstrap setup env load-env validate validate-env maintenance test fmt fmt-check lint shellcheck yaml-validate tf-init tf-fmt tf-fmt-check tf-validate tf-plan tf-plan-out tf-apply tf-apply-plan tf-destroy tf-env-init tf-env-validate tf-env-plan tofu-init tofu-validate tofu-plan drift drift-detect token-clean token-rotate-dry token-rotate security-scan sbom doctor clean phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6 phase-f7 workflow-policy workflow-validate gitops-validate ci
+.PHONY: help bootstrap setup env load-env validate validate-env maintenance test fmt fmt-check lint shellcheck yaml-validate tf-init tf-fmt tf-fmt-check tf-validate tf-plan tf-plan-out tf-apply tf-apply-plan tf-destroy tf-state-rm-waf tf-env-init tf-env-validate tf-env-plan tofu-init tofu-validate tofu-plan drift drift-detect token-clean token-rotate-dry token-rotate security-scan sbom doctor clean phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6 phase-f7 workflow-policy workflow-validate gitops-validate ci
 
 help:
 	@printf '%s\n' \
@@ -54,6 +54,7 @@ help:
 	'  make tf-plan                terraform -chdir=terraform plan' \
 	'  make tf-plan-out            terraform plan -out=$(TF_PLAN_FILE)' \
 	'  make tf-apply-plan CONFIRM_APPLY=yes' \
+	'  make tf-state-rm-waf CONFIRM_APPLY=yes' \
 	'  make tf-apply CONFIRM_APPLY=yes' \
 	'  make tf-destroy CONFIRM_APPLY=yes' \
 	'  make drift                  terraform plan -detailed-exitcode' \
@@ -146,6 +147,18 @@ tf-apply-plan:
 	@test "$(CONFIRM_APPLY)" = "yes" || (echo "ERROR: Set CONFIRM_APPLY=yes to continue." && exit 1)
 	@test -f "$(TF_ROOT)/$(TF_PLAN_FILE)" || (echo "ERROR: missing saved plan $(TF_ROOT)/$(TF_PLAN_FILE). Run: make tf-plan-out" && exit 1)
 	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) apply $(TF_PLAN_FILE)
+
+tf-state-rm-waf: tf-init
+	@test "$(CONFIRM_APPLY)" = "yes" || (echo "ERROR: Set CONFIRM_APPLY=yes to remove WAF resources from Terraform state only." && exit 1)
+	@set +e; \
+	addresses="$$(bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) state list 2>/dev/null | grep '^module\.waf' || true)"; \
+	set -e; \
+	if [ -z "$$addresses" ]; then echo "No module.waf resources found in Terraform state."; exit 0; fi; \
+	printf '%s\n' "$$addresses"; \
+	printf '%s\n' "$$addresses" | while IFS= read -r addr; do \
+	  [ -n "$$addr" ] || continue; \
+	  bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) state rm "$$addr"; \
+	done
 
 tf-destroy: tf-init
 	@test "$(CONFIRM_APPLY)" = "yes" || (echo "ERROR: Set CONFIRM_APPLY=yes to continue." && exit 1)
