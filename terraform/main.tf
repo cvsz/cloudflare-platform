@@ -69,6 +69,8 @@ module "d1" {
 }
 
 module "access_app_platform" {
+  count = var.enable_zero_trust ? 1 : 0
+
   source     = "./modules/cloudflare-access-app"
   account_id = var.cf_account_id
   name       = "platform-access"
@@ -76,14 +78,18 @@ module "access_app_platform" {
 }
 
 module "access_policy_platform" {
+  count = var.enable_zero_trust ? 1 : 0
+
   source                = "./modules/cloudflare-access-policy"
   account_id            = var.cf_account_id
-  application_id        = module.access_app_platform.application_id
+  application_id        = module.access_app_platform[0].application_id
   name                  = "allow-corp"
   include_email_domains = [var.domain]
 }
 
 module "saml_provider_platform" {
+  count = var.enable_zero_trust ? 1 : 0
+
   source        = "./modules/cloudflare-saml-provider"
   account_id    = var.cf_account_id
   name          = "corp-idp"
