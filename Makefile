@@ -26,7 +26,7 @@ export STRICT_TOOLS
 export CODEX_CLOUD
 export STRICT_ENV
 
-.PHONY: help bootstrap setup env load-env validate validate-agent ci-validate validate-env maintenance test fmt fmt-check lint shellcheck yaml-validate policy-test sbom-generation sbom-validate security-validate tunnel-validation waf-validation tf-init tf-fmt tf-fmt-check tf-validate tf-plan tf-plan-out tf-apply tf-apply-plan tf-destroy tf-state-rm-waf tf-env-init tf-env-validate tf-env-plan tofu-init tofu-validate tofu-plan drift drift-detect token-clean token-rotate-dry token-rotate security-scan sbom doctor clean phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6 phase-f7 workflow-policy workflow-validate gitops-validate ci
+.PHONY: help bootstrap setup env load-env validate validate-agent ci-validate validate-env maintenance test fmt fmt-check lint shellcheck yaml-validate policy-test sbom-generation sbom-validate security-validate tunnel-validation waf-validation tf-init tf-fmt tf-fmt-check tf-validate tf-plan tf-plan-out tf-apply tf-apply-plan tf-destroy tf-state-rm-waf tf-env-init tf-env-validate tf-env-plan tofu-init tofu-validate tofu-plan drift drift-detect token-clean token-rotate-dry token-rotate security-scan sbom cosign-sign doctor clean phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6 phase-f7 workflow-policy workflow-validate gitops-validate ci
 
 help:
 	@printf '%s\n' \
@@ -238,7 +238,22 @@ security-scan:
 	@if [ -x scripts/security-scan.sh ]; then bash scripts/security-scan.sh; else echo "WARN: scripts/security-scan.sh missing; skipped"; fi
 
 sbom:
-	@if [ -x scripts/generate-sbom.sh ]; then bash scripts/generate-sbom.sh; else echo "WARN: scripts/generate-sbom.sh missing; skipped"; fi
+	@if command -v syft >/dev/null 2>&1; then \
+	  syft dir:. -o spdx-json=artifacts.sbom.spdx.json; \
+	elif [ -x scripts/generate-sbom.sh ]; then \
+	  bash scripts/generate-sbom.sh; \
+	else \
+	  echo "WARN: syft and scripts/generate-sbom.sh missing; SBOM generation skipped"; \
+	fi
+
+cosign-sign:
+	@if [ ! -f artifacts.sbom.spdx.json ]; then \
+	  echo "No SBOM artifact found; cosign signing skipped"; \
+	elif ! command -v cosign >/dev/null 2>&1; then \
+	  echo "WARN: cosign not installed; signing skipped"; \
+	else \
+	  cosign sign-blob --yes artifacts.sbom.spdx.json --output-signature artifacts.sbom.spdx.json.sig; \
+	fi
 
 doctor:
 	@echo "PROJECT_ROOT=$(PROJECT_ROOT)"
