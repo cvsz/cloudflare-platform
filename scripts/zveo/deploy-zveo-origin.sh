@@ -10,6 +10,7 @@ ZVEO_REPO_URL="${ZVEO_REPO_URL:-https://github.com/cvsz/zveo.git}"
 ZVEO_REF="${ZVEO_REF:-main}"
 ZVEO_DIR="${ZVEO_DIR:-/opt/zveo}"
 COMPOSE_FILE="${COMPOSE_FILE:-infra/docker/docker-compose.yml}"
+COMPOSE_PLATFORM_FILE="${COMPOSE_PLATFORM_FILE:-infra/docker/docker-compose.platform.yml}"
 COMPOSE_PROFILE="${COMPOSE_PROFILE:-node}"
 LOCAL_HEALTH_URL="${LOCAL_HEALTH_URL:-http://localhost:8080}"
 PUBLIC_HEALTH_URL="${PUBLIC_HEALTH_URL:-https://zveo.zeaz.dev/}"
@@ -23,6 +24,16 @@ compose(){
   else
     fail "docker compose is required"
   fi
+}
+
+compose_args(){
+  local args=( -f "$COMPOSE_FILE" )
+  if [[ -f "$COMPOSE_PLATFORM_FILE" ]]; then
+    args+=( -f "$COMPOSE_PLATFORM_FILE" )
+  else
+    log "WARN: platform compose override missing: $COMPOSE_PLATFORM_FILE"
+  fi
+  printf '%s\0' "${args[@]}"
 }
 
 has git || fail "git is required"
@@ -46,14 +57,17 @@ git -C "$ZVEO_DIR" pull --ff-only origin "$ZVEO_REF" || true
 log "starting zVEO compose profile=$COMPOSE_PROFILE"
 (
   cd "$ZVEO_DIR"
-  compose -f "$COMPOSE_FILE" --profile "$COMPOSE_PROFILE" up -d --build postgres redis minio db-migrate api-gateway dashboard
+  mapfile -d '' -t compose_files < <(compose_args)
+  compose "${compose_files[@]}" --profile "$COMPOSE_PROFILE" down --remove-orphans || true
+  compose "${compose_files[@]}" --profile "$COMPOSE_PROFILE" up -d --build postgres redis minio db-migrate api-gateway dashboard
 )
 
 if [[ "$RUN_SEED" == "true" ]]; then
   log "running database seed"
   (
     cd "$ZVEO_DIR"
-    compose -f "$COMPOSE_FILE" --profile "$COMPOSE_PROFILE" run --rm db-seed
+    mapfile -d '' -t compose_files < <(compose_args)
+    compose "${compose_files[@]}" --profile "$COMPOSE_PROFILE" run --rm db-seed
   )
 else
   log "database seed skipped; set RUN_SEED=true to seed"
