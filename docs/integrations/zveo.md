@@ -7,7 +7,7 @@ ZVEO integrates into the Zeaz Cloudflare Platform as the AI content/video/social
 | Hostname | Purpose | Local origin |
 |---|---|---|
 | `zveo.zeaz.dev` | Next.js dashboard | `http://127.0.0.1:3002` |
-| `api.zveo.zeaz.dev` | API gateway | `http://127.0.0.1:8090` |
+| `api-zveo.zeaz.dev` | API gateway | `http://127.0.0.1:8090` |
 
 ## Services
 
@@ -44,9 +44,10 @@ tunnels/cloudflared/zeaz-platform.yml
 Terraform DNS records provision:
 
 - `zveo.zeaz.dev`
-- `api.zveo.zeaz.dev`
+- `api-zveo.zeaz.dev`
 
 ## Notes
 
 Cloudflare Tunnel is token-based in production.
 Cloudflare Zero Trust Public Hostnames are the source of truth.
+Use `api-zveo.zeaz.dev` as the canonical public API hostname. Do not use nested `api.zveo.zeaz.dev` unless Cloudflare edge certificates explicitly support that nested hostname.
