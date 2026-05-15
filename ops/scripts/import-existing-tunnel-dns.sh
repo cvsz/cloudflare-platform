@@ -10,6 +10,7 @@ records=(
   "www.zeaz.dev|cloudflare_record.tunnel_cname[\"www.zeaz.dev\"]"
   "app.zeaz.dev|cloudflare_record.tunnel_cname[\"app.zeaz.dev\"]"
   "admin-wallet.zeaz.dev|cloudflare_record.tunnel_cname[\"admin-wallet.zeaz.dev\"]"
+  "api-zveo.zeaz.dev|cloudflare_record.tunnel_cname[\"api-zveo.zeaz.dev\"]"
   "api.zveo.zeaz.dev|cloudflare_record.tunnel_cname[\"api.zveo.zeaz.dev\"]"
   "api.zeaz.dev|module.dns.cloudflare_record.records[\"api\"]"
 )
