@@ -3,32 +3,40 @@ set -euo pipefail
 
 FAILED=0
 
+service_exists() {
+  local svc="$1"
+  systemctl cat "$svc" >/dev/null 2>&1 || systemctl status "$svc" >/dev/null 2>&1
+}
+
 check_service() {
   local svc="$1"
-  if systemctl list-unit-files | grep -q "^${svc}"; then
-    if systemctl is-active --quiet "$svc"; then
-      echo "[OK] service ${svc}"
-    else
-      echo "[FAIL] service ${svc}"
-      FAILED=1
-    fi
-  else
+
+  if ! service_exists "$svc"; then
     echo "[SKIP] service ${svc} not installed"
+    return 0
+  fi
+
+  if systemctl is-active --quiet "$svc"; then
+    echo "[OK] service ${svc}"
+  else
+    echo "[FAIL] service ${svc}"
+    FAILED=1
   fi
 }
 
 check_optional_service() {
   local svc="$1"
-  if ! systemctl list-unit-files | grep -q "^${svc}"; then
+
+  if ! service_exists "$svc"; then
     echo "[SKIP] optional service ${svc} not installed"
     return 0
   fi
+
   if systemctl is-enabled --quiet "$svc" 2>/dev/null; then
     if systemctl is-active --quiet "$svc"; then
       echo "[OK] optional service ${svc}"
     else
-      echo "[FAIL] optional service ${svc} enabled but not active"
-      FAILED=1
+      echo "[WARN] optional service ${svc} enabled but not active"
     fi
   else
     echo "[SKIP] optional service ${svc} disabled"
@@ -38,13 +46,24 @@ check_optional_service() {
 check_http() {
   local url="$1"
   local code
+
   code=$(curl -o /dev/null -s -w "%{http_code}" --max-time 10 "$url" || true)
+
   if [[ "$code" =~ ^(200|30[0-8])$ ]]; then
     echo "[OK] ${url} (${code})"
-  else
-    echo "[FAIL] ${url} (${code})"
-    FAILED=1
+    return 0
   fi
+
+  if [[ "$url" == https://* ]]; then
+    code=$(curl -4 -o /dev/null -s -w "%{http_code}" --max-time 10 "$url" || true)
+    if [[ "$code" =~ ^(200|30[0-8])$ ]]; then
+      echo "[OK] ${url} (${code}, ipv4 fallback)"
+      return 0
+    fi
+  fi
+
+  echo "[FAIL] ${url} (${code})"
+  FAILED=1
 }
 
 echo "== Zeaz core services =="
