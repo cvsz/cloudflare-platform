@@ -6,11 +6,15 @@ log(){ printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 warn(){ log "WARN: $*" >&2; }
 die(){ log "ERROR: $*" >&2; exit 1; }
 
+# Bug 3 fix: enforce Bash 4+ before using associative arrays
+[[ "${BASH_VERSINFO[0]}" -ge 4 ]] || die "Bash 4.0+ required (found ${BASH_VERSION})"
+
 find_root(){
   local d="${PROJECT_ROOT:-${GITHUB_WORKSPACE:-${PWD}}}"
 
   while [[ "$d" != "/" ]]; do
-    if [[ -d "$d/.git" ]] || [[ -f "$d/.env.example" ]] || [[ -d "$d/terraform" ]] || [[ -f "$d/README.md" ]]; then
+    # Bug 4 fix: removed README.md — too common, causes false matches
+    if [[ -d "$d/.git" ]] || [[ -f "$d/.env.example" ]] || [[ -d "$d/terraform" ]]; then
       printf '%s\n' "$d"
       return 0
     fi
@@ -29,13 +33,13 @@ load_file(){
   local file="$1"
   [[ -f "$file" ]] || return 0
   set -a
+  # Bug 1 fix: restore set +a even if source fails
   # shellcheck disable=SC1090
-  source "$file"
+  source "$file" || { set +a; die "failed to source env file: $file"; }
   set +a
   log "loaded env file: $file"
 }
 
-# Runtime-injected GitHub Actions secrets have highest priority. Capture them before sourcing files.
 declare -A runtime_values=()
 for key in CF_ACCOUNT_ID CF_ZONE_ID CF_API_TOKEN CF_DNS_TOKEN CF_ZT_TOKEN CF_WORKERS_TOKEN CF_WAF_TOKEN CF_TUNNEL_TOKEN CF_R2_TOKEN CF_AUDIT_TOKEN CF_AI_GATEWAY_TOKEN CF_AI_GATEWAY_SLUG; do
   if [[ -n "${!key:-}" ]]; then
@@ -77,7 +81,8 @@ if [[ "$missing" -gt 0 ]]; then
   if [[ "$STRICT_ENV" == "true" ]]; then
     die "$missing required environment variable(s) missing. Configure GitHub Actions secrets or provide .env/.env.cloudflare."
   fi
-  warn "$missing required environment variable(s) missing; continuing because STRICT_ENV=false"
+  # Bug 2 fix: show actual STRICT_ENV value instead of assuming "false"
+  warn "$missing required environment variable(s) missing; continuing (STRICT_ENV='${STRICT_ENV}')"
 fi
 
 if [[ -n "${GITHUB_ENV:-}" ]]; then
