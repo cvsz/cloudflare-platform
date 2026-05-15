@@ -1,13 +1,8 @@
 # Zeaz application DNS records.
 # These records point public hostnames to the active Cloudflare Tunnel.
 #
-# Required variables are intentionally generic so this file can be used from
-# the root module or copied into an environment root.
-
-variable "cf_zone_id" {
-  description = "Cloudflare zone ID for zeaz.dev."
-  type        = string
-}
+# This file reuses var.cf_zone_id from terraform/variables.tf and only defines
+# the tunnel CNAME target required by these app records.
 
 variable "zeaz_tunnel_cname_target" {
   description = "Cloudflare Tunnel CNAME target, for example <tunnel-id>.cfargotunnel.com."
