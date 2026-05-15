@@ -26,7 +26,7 @@ export STRICT_TOOLS
 export CODEX_CLOUD
 export STRICT_ENV
 
-.PHONY: help bootstrap setup env load-env validate validate-agent ci-validate validate-env maintenance test fmt fmt-check lint shellcheck yaml-validate policy-test sbom-generation sbom-validate security-validate tunnel-validation waf-validation tf-init tf-fmt tf-fmt-check tf-validate tf-plan tf-plan-out tf-apply tf-apply-plan tf-destroy tf-state-rm-waf tf-env-init tf-env-validate tf-env-plan tofu-init tofu-validate tofu-plan drift drift-detect token-clean token-rotate-dry token-rotate security-scan sbom cosign-sign doctor clean phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6 phase-f7 workflow-policy workflow-validate gitops-validate ci
+.PHONY: help bootstrap setup env load-env validate validate-agent ci-validate validate-env maintenance test fmt fmt-check lint shellcheck yaml-validate policy-test sbom-generation sbom-validate security-validate tunnel-validation waf-validation tf-init tf-fmt tf-fmt-check tf-validate tf-plan tf-plan-out tf-apply tf-apply-plan tf-destroy tf-state-rm-waf tf-env-init tf-env-validate tf-env-plan tofu-init tofu-validate tofu-plan drift drift-detect token-clean token-rotate-dry token-rotate security-scan sbom cosign-sign doctor clean phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6 phase-f7 workflow-policy workflow-validate gitops-validate ci health-zveo health-zwallet health-platform backup-platform install-platform-ops
 
 help:
 	@printf '%s\n' \
@@ -48,6 +48,13 @@ help:
 	'  make fmt                    Terraform fmt recursive' \
 	'  make fmt-check              Terraform fmt check recursive' \
 	'  make lint                   Run optional shellcheck/tflint/yaml checks' \
+	'' \
+	'Zeaz platform ops:' \
+	'  make health-zveo            Run ZVEO health checks' \
+	'  make health-zwallet         Run zWallet health checks' \
+	'  make health-platform        Run full platform health checks' \
+	'  make backup-platform        Run platform backup script' \
+	'  make install-platform-ops   Install ops scripts into /usr/local/bin' \
 	'' \
 	'Terraform root:' \
 	'  make tf-init                terraform -chdir=terraform init' \
@@ -124,10 +131,25 @@ lint: shellcheck yaml-validate
 	@if command -v tflint >/dev/null 2>&1; then tflint --recursive --chdir=$(TF_ROOT); else echo "WARN: tflint not installed; skipped"; fi
 
 shellcheck:
-	@if command -v shellcheck >/dev/null 2>&1; then find scripts -type f -name '*.sh' -print0 | xargs -0 shellcheck; else echo "WARN: shellcheck not installed; skipped"; fi
+	@if command -v shellcheck >/dev/null 2>&1; then find scripts ops -type f -name '*.sh' -o -type f -perm -111 | xargs -r shellcheck; else echo "WARN: shellcheck not installed; skipped"; fi
 
 yaml-validate:
 	@if [ -f scripts/validate-yaml.py ]; then $(PYTHON) scripts/validate-yaml.py; else echo "INFO: scripts/validate-yaml.py not present; skipped"; fi
+
+health-zveo:
+	@bash ops/bin/zveo-health
+
+health-zwallet:
+	@bash ops/bin/zwallet-health
+
+health-platform:
+	@bash ops/bin/zeaz-health
+
+backup-platform:
+	@bash ops/scripts/backup-platform.sh
+
+install-platform-ops:
+	@bash ops/install-platform-ops.sh
 
 policy-test: workflow-policy
 	@echo "Policy testing complete."
