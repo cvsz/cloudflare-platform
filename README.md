@@ -1,4 +1,4 @@
-# zeazdev - cfstack — Cloudflare Zero Trust Platform
+# Cloudflare Zero Trust Platform - zeaz-platform control plan 
 
 Enterprise-grade, fully-automated Cloudflare infrastructure platform for **ZeazDev** (`zeaz.dev`).
 Covers Zero Trust access, DNS, Cloudflare Tunnels, Workers, WAF, R2, and scoped API token lifecycle management.
