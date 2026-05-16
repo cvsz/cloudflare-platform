@@ -9,9 +9,15 @@ terraform {
   }
 
 provider "cloudflare" {
+  api_token = var.cloudflare_bootstrap_token
+}
 
 provider "cloudflare" {
+  api_token = var.cloudflare_bootstrap_token
+}
   alias     = "dns"
 
 provider "cloudflare" {
+  api_token = var.cloudflare_bootstrap_token
+}
   alias     = "waf"

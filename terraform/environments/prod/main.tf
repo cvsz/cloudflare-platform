@@ -27,55 +27,65 @@ locals {
 
 
 module "dns" {
-  count   = var.enable_foundation ? 1 : 0
+  count = 0
+  count = 0
   source  = "../../modules/cloudflare-dns"
   zone_id = var.cloudflare_zone_id
   records = {}
 
 module "access_app" {
-  count      = var.enable_zero_trust ? 1 : 0
+  count = 0
+  count = 0
   source     = "../../modules/cloudflare-access-app"
   account_id = var.cloudflare_account_id
 
 module "access_policy" {
-  count          = var.enable_zero_trust ? 1 : 0
+  count = 0
+  count = 0
   source         = "../../modules/cloudflare-access-policy"
   account_id     = var.cloudflare_account_id
 
 module "saml_provider" {
-  count        = var.enable_zero_trust ? 1 : 0
+  count = 0
+  count = 0
   source       = "../../modules/cloudflare-saml-provider"
   account_id   = var.cloudflare_account_id
 
 module "tunnel" {
-  count      = var.enable_networking ? 1 : 0
+  count = 0
+  count = 0
   source     = "../../modules/cloudflare-tunnel"
   account_id = var.cloudflare_account_id
   secret     = var.tunnel_secret
 
 module "workers" {
-  count      = var.enable_workers_ai ? 1 : 0
+  count = 0
+  count = 0
   source     = "../../modules/cloudflare-workers"
   account_id = var.cloudflare_account_id
 
 module "r2" {
-  count      = var.enable_workers_ai ? 1 : 0
+  count = 0
+  count = 0
   source     = "../../modules/cloudflare-r2"
   account_id = var.cloudflare_account_id
 
 module "d1" {
-  count      = var.enable_workers_ai ? 1 : 0
+  count = 0
+  count = 0
   source     = "../../modules/cloudflare-d1"
   account_id = var.cloudflare_account_id
 
 module "waf" {
-  count         = var.enable_monitoring_security ? 1 : 0
+  count = 0
+  count = 0
   source        = "../../modules/cloudflare-waf"
   zone_id       = var.cloudflare_zone_id
   redirect_host = var.primary_domain
 
 module "api_shield" {
-  count   = var.enable_monitoring_security && local.is_enterprise ? 1 : 0
+  count = 0
+  count = 0
   source  = "../../modules/cloudflare-api-shield"
   zone_id = var.cloudflare_zone_id
 
