@@ -1,6 +1,5 @@
 resource "cloudflare_workers_script" "app" {
   account_id = var.cloudflare_account_id
-  script_name = var.worker_name
   content = file("${path.module}/../../src/worker.js")
   main_module = "worker.js"
   compatibility_date = "2025-01-01"

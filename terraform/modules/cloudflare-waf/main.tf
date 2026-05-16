@@ -13,7 +13,6 @@ resource "cloudflare_zone_settings_override" "tls_hardening" {
 
 resource "cloudflare_ruleset" "waf_managed" {
   zone_id = var.zone_id
-  name    = "managed-waf"
   kind    = "zone"
   phase   = "http_request_firewall_managed"
 
@@ -32,7 +31,6 @@ resource "cloudflare_ruleset" "waf_managed" {
 
 resource "cloudflare_ruleset" "firewall_custom" {
   zone_id = var.zone_id
-  name    = "firewall-custom"
   kind    = "zone"
   phase   = "http_request_firewall_custom"
 
@@ -52,7 +50,6 @@ resource "cloudflare_ruleset" "firewall_custom" {
 
 resource "cloudflare_ruleset" "cache" {
   zone_id = var.zone_id
-  name    = "cache-rules"
   kind    = "zone"
   phase   = "http_request_cache_settings"
 
@@ -77,7 +74,6 @@ resource "cloudflare_ruleset" "cache" {
 
 resource "cloudflare_ruleset" "redirects" {
   zone_id = var.zone_id
-  name    = "redirect-rules"
   kind    = "zone"
   phase   = "http_request_dynamic_redirect"
 

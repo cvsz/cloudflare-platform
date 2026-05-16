@@ -41,13 +41,11 @@ module "access_policy" {
   count          = var.enable_zero_trust ? 1 : 0
   source         = "../../modules/cloudflare-access-policy"
   account_id     = var.cloudflare_account_id
-  application_id = var.access_application_id
 
 module "saml_provider" {
   count        = var.enable_zero_trust ? 1 : 0
   source       = "../../modules/cloudflare-saml-provider"
   account_id   = var.cloudflare_account_id
-  metadata_url = var.saml_metadata_url
 
 module "tunnel" {
   count      = var.enable_networking ? 1 : 0

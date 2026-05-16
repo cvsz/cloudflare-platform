@@ -13,7 +13,6 @@ resource "cloudflare_record" "records" {
   for_each = local.normalized_records
 
   zone_id  = var.zone_id
-  name     = each.value.name
   type     = upper(each.value.type)
   content  = each.value.resolved_value
   ttl      = each.value.ttl

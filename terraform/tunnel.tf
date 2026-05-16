@@ -1,6 +1,5 @@
 resource "cloudflare_zero_trust_tunnel_cloudflared" "main" {
   account_id = var.cloudflare_account_id
-  name       = "zeaz-main"
   secret     = base64encode(sha256("${var.cloudflare_account_id}:${var.cloudflare_zone_id}:${var.domain}"))
 
 locals {
@@ -22,7 +21,6 @@ locals {
 resource "cloudflare_record" "tunnel_cname" {
   for_each = toset(local.tunnel_hostnames)
   zone_id  = var.cloudflare_zone_id
-  name     = each.value
   type     = "CNAME"
   content  = "${local.active_tunnel_id}.cfargotunnel.com"
   proxied  = true
