@@ -4,9 +4,6 @@ variable "cloudflare_bootstrap_token" {
   sensitive   = true
   nullable    = false
 
-  validation {
-    error_message = "token too short"
-  }
 }
 
 variable "cloudflare_account_id" {
@@ -14,9 +11,6 @@ variable "cloudflare_account_id" {
   description = "Cloudflare account"
   nullable    = false
 
-  validation {
-    condition     = can(regex("^[a-f0-9]{32}$", var.cloudflare_account_id))
-    error_message = "bad id"
   }
 }
 
@@ -25,9 +19,6 @@ variable "cloudflare_zone_id" {
   description = "Cloudflare zone"
   nullable    = false
 
-  validation {
-    condition     = can(regex("^[a-f0-9]{32}$", var.cloudflare_zone_id))
-    error_message = "bad id"
   }
 }
 
@@ -37,8 +28,4 @@ variable "plan_tier" {
   default     = "Free"
   nullable    = false
 
-  validation {
-    condition     = contains(["Free", "Pro", "Business", "Enterprise"], var.plan_tier)
-    error_message = "invalid"
-  }
 }

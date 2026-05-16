@@ -3,9 +3,6 @@ variable "zone_id" {
   description = "Cloudflare zone ID"
   nullable    = false
 
-  validation {
-    condition     = can(regex("^[a-f0-9]{32}$", var.zone_id))
-    error_message = "zone_id must be a 32-char lowercase hex Cloudflare zone ID."
   }
 }
 
@@ -21,10 +18,6 @@ variable "redirect_host" {
   description = "Primary hostname for canonical redirect target"
   nullable    = false
 
-  validation {
-    condition     = can(regex("^[a-z0-9.-]+$", var.redirect_host))
-    error_message = "redirect_host must be a valid DNS hostname."
-  }
 }
 
 variable "enable_zone_settings_override" {

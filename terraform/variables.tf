@@ -42,7 +42,6 @@ variable "cloudflare_zone_id" {
   description = "Cloudflare Zone ID"
   nullable    = false
 
-    error_message = "cloudflare_zone_id must be a 32-character hexadecimal ID"
   }
 }
 
@@ -51,7 +50,6 @@ variable "cloudflare_account_id" {
   description = "Cloudflare Account ID"
   nullable    = false
 
-    error_message = "cloudflare_account_id must be a 32-character hexadecimal ID"
   }
 }
 

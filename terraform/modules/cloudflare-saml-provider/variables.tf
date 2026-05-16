@@ -15,20 +15,12 @@ variable "provider_type" {
   description = "Identity provider type: saml or oidc."
   nullable    = false
   default     = "saml"
-  validation {
-    condition     = contains(["saml", "oidc"], var.provider_type)
-    error_message = "provider_type must be saml or oidc"
-  }
 }
 
 variable "metadata_url" {
   type        = string
   description = "SAML metadata URL (https only)."
   nullable    = false
-  validation {
-    condition     = can(regex("^https://", var.metadata_url))
-    error_message = "metadata_url must start with https://"
-  }
 }
 
 variable "attributes" {
