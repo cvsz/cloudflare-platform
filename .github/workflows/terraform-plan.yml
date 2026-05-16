@@ -24,7 +24,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ${{ github.workspace }}   # fix: pin all steps to repo root
+        working-directory: ${{ github.workspace }}
 
     steps:
       - name: Checkout
@@ -33,23 +33,20 @@ jobs:
       - name: Validate shell scripts syntax
         run: find scripts -type f -name '*.sh' -print0 | xargs -0 -r -I{} bash -n {}
 
-      # fix: load secrets into GITHUB_ENV so every subsequent step inherits them
       - name: Load environment
         env:
-          # Cloudflare credentials — injected from GitHub secrets
-          CF_ACCOUNT_ID:      ${{ secrets.CF_ACCOUNT_ID }}
-          CF_ZONE_ID:         ${{ secrets.CF_ZONE_ID }}
-          CF_API_TOKEN:       ${{ secrets.CF_API_TOKEN }}
-          CF_DNS_TOKEN:       ${{ secrets.CF_DNS_TOKEN }}
-          CF_ZT_TOKEN:        ${{ secrets.CF_ZT_TOKEN }}
-          CF_WORKERS_TOKEN:   ${{ secrets.CF_WORKERS_TOKEN }}
-          CF_WAF_TOKEN:       ${{ secrets.CF_WAF_TOKEN }}
-          CF_TUNNEL_TOKEN:    ${{ secrets.CF_TUNNEL_TOKEN }}
-          CF_R2_TOKEN:        ${{ secrets.CF_R2_TOKEN }}
-          CF_AUDIT_TOKEN:     ${{ secrets.CF_AUDIT_TOKEN }}
+          CF_ACCOUNT_ID:       ${{ secrets.CF_ACCOUNT_ID }}
+          CF_ZONE_ID:          ${{ secrets.CF_ZONE_ID }}
+          CF_API_TOKEN:        ${{ secrets.CF_API_TOKEN }}
+          CF_DNS_TOKEN:        ${{ secrets.CF_DNS_TOKEN }}
+          CF_ZT_TOKEN:         ${{ secrets.CF_ZT_TOKEN }}
+          CF_WORKERS_TOKEN:    ${{ secrets.CF_WORKERS_TOKEN }}
+          CF_WAF_TOKEN:        ${{ secrets.CF_WAF_TOKEN }}
+          CF_TUNNEL_TOKEN:     ${{ secrets.CF_TUNNEL_TOKEN }}
+          CF_R2_TOKEN:         ${{ secrets.CF_R2_TOKEN }}
+          CF_AUDIT_TOKEN:      ${{ secrets.CF_AUDIT_TOKEN }}
           CF_AI_GATEWAY_TOKEN: ${{ secrets.CF_AI_GATEWAY_TOKEN }}
-          CF_AI_GATEWAY_SLUG: ${{ secrets.CF_AI_GATEWAY_SLUG }}
-          # Script behaviour
+          CF_AI_GATEWAY_SLUG:  ${{ secrets.CF_AI_GATEWAY_SLUG }}
           STRICT_ENV: "true"
         run: |
           chmod +x "$GITHUB_WORKSPACE/scripts/cloudflare/load-env.sh"
@@ -61,12 +58,22 @@ jobs:
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
 
-      # fix: CF_* vars are now available via GITHUB_ENV — no need to re-declare them here
       - name: Run Terraform plan
         env:
           ENVIRONMENT:    dev
           PRIMARY_DOMAIN: zeaz.dev
           CONFIRM_APPLY:  "no"
+          # TF_VAR_* → picked up automatically by Terraform as input variables
+          TF_VAR_cf_api_token:                   ${{ secrets.CF_API_TOKEN }}
+          TF_VAR_cf_dns_token:                   ${{ secrets.CF_DNS_TOKEN }}
+          TF_VAR_cf_zone_id:                     ${{ secrets.CF_ZONE_ID }}
+          TF_VAR_cf_account_id:                  ${{ secrets.CF_ACCOUNT_ID }}
+          TF_VAR_cf_zt_token:                    ${{ secrets.CF_ZT_TOKEN }}
+          TF_VAR_cf_workers_token:               ${{ secrets.CF_WORKERS_TOKEN }}
+          TF_VAR_cf_waf_token:                   ${{ secrets.CF_WAF_TOKEN }}
+          TF_VAR_cf_tunnel_token:                ${{ secrets.CF_TUNNEL_TOKEN }}
+          TF_VAR_cf_r2_token:                    ${{ secrets.CF_R2_TOKEN }}
+          TF_VAR_identity_provider_metadata_url: ${{ secrets.IDENTITY_PROVIDER_METADATA_URL }}
         run: make tf-plan
 
       - name: Upload Terraform plan artifacts
