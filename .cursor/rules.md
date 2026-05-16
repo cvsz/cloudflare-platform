@@ -6,9 +6,7 @@
 - No placeholder values and no pseudo-code.
 
 ## Required Checks Before Commit
-- `make -C zeaz-platform validate`
-- `make -C zeaz-platform contract`
-- `make -C zeaz-platform plan-tier`
+- `make validate`\n- `make contract`\n- `make plan-tier`
 
 ## File Conventions
 - Bash scripts must begin with:
