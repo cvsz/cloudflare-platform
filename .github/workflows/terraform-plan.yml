@@ -3,11 +3,11 @@ name: Terraform Plan
 on:
   pull_request:
     paths:
-      - 'terraform/**'
-      - 'opentofu/**'
-      - 'scripts/**'
+      - 'cloudflare-platform/terraform/**'
+      - 'cloudflare-platform/opentofu/**'
+      - 'cloudflare-platform/scripts/**'
       - '.github/workflows/terraform-plan.yml'
-      - 'Makefile'
+      - 'cloudflare-platform/Makefile'
   workflow_dispatch:
 
 permissions:
@@ -24,6 +24,7 @@ jobs:
     defaults:
       run:
         shell: bash
+        # All relative paths resolve from the repo root
         working-directory: ${{ github.workspace }}
 
     steps:
@@ -31,11 +32,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── 2. Static analysis ───────────────────────────────────────────────────
-      - name: Validate shell scripts syntax
-        run: find scripts -type f -name '*.sh' -print0 | xargs -0 -r -I{} bash -n {}
+      # ── 2. Debug — confirm script location before touching it ────────────────
+      - name: Debug — locate load-env.sh
+        run: |
+          echo "=== workspace: $GITHUB_WORKSPACE"
+          echo "=== searching for load-env.sh..."
+          find "$GITHUB_WORKSPACE" -name "load-env.sh" 2>/dev/null \
+            && echo "=== top-level layout:" \
+            && ls "$GITHUB_WORKSPACE" \
+            || echo "WARNING: load-env.sh not found anywhere"
 
-      # ── 3. Preflight — fail fast if secrets are not configured ───────────────
+      # ── 3. Static analysis ───────────────────────────────────────────────────
+      - name: Validate shell scripts syntax
+        run: |
+          find "$GITHUB_WORKSPACE/cloudflare-platform/scripts" \
+            -type f -name '*.sh' -print0 \
+            | xargs -0 -r -I{} bash -n {}
+
+      # ── 4. Preflight — fail fast with clear errors if secrets are missing ────
       - name: Preflight — verify secrets are configured
         env:
           CF_ACCOUNT_ID:    ${{ secrets.CF_ACCOUNT_ID }}
@@ -66,7 +80,7 @@ jobs:
           done
           (( missing == 0 )) || exit 1
 
-      # ── 4. Load environment — secrets win over any .env file ─────────────────
+      # ── 5. Load environment ──────────────────────────────────────────────────
       - name: Load environment
         env:
           CF_ACCOUNT_ID:       ${{ secrets.CF_ACCOUNT_ID }}
@@ -83,25 +97,25 @@ jobs:
           CF_AI_GATEWAY_SLUG:  ${{ secrets.CF_AI_GATEWAY_SLUG }}
           STRICT_ENV: "true"
         run: |
-          chmod +x "$GITHUB_WORKSPACE/scripts/cloudflare/load-env.sh"
-          "$GITHUB_WORKSPACE/scripts/cloudflare/load-env.sh"
+          SCRIPT="$GITHUB_WORKSPACE/cloudflare-platform/scripts/cloudflare/load-env.sh"
+          chmod +x "$SCRIPT"
+          "$SCRIPT"
 
-      # ── 5. Toolchain ─────────────────────────────────────────────────────────
+      # ── 6. Toolchain ─────────────────────────────────────────────────────────
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
 
-      # ── 6. Plan ──────────────────────────────────────────────────────────────
+      # ── 7. Plan ──────────────────────────────────────────────────────────────
       - name: Run Terraform plan
+        working-directory: ${{ github.workspace }}/cloudflare-platform
         env:
           ENVIRONMENT:    dev
           PRIMARY_DOMAIN: zeaz.dev
           CONFIRM_APPLY:  "no"
-          # TF_VAR_* → Terraform reads these automatically as input variables.
-          # The CF_* vars written to GITHUB_ENV by load-env.sh are for shell
-          # tooling; Terraform needs its own TF_VAR_ prefixed copies.
+          # TF_VAR_* — Terraform reads these automatically as input variables
           TF_VAR_cf_api_token:                   ${{ secrets.CF_API_TOKEN }}
           TF_VAR_cf_dns_token:                   ${{ secrets.CF_DNS_TOKEN }}
           TF_VAR_cf_zone_id:                     ${{ secrets.CF_ZONE_ID }}
@@ -114,13 +128,13 @@ jobs:
           TF_VAR_identity_provider_metadata_url: ${{ secrets.IDENTITY_PROVIDER_METADATA_URL }}
         run: make tf-plan
 
-      # ── 7. Artifacts ─────────────────────────────────────────────────────────
+      # ── 8. Artifacts ─────────────────────────────────────────────────────────
       - name: Upload Terraform plan artifacts
-        if: ${{ hashFiles('terraform/**/*.tfplan', 'terraform/**/plan-*.txt') != '' }}
+        if: ${{ hashFiles('cloudflare-platform/terraform/**/*.tfplan', 'cloudflare-platform/terraform/**/plan-*.txt') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan-artifacts
           path: |
-            terraform/**/*.tfplan
-            terraform/**/plan-*.txt
+            cloudflare-platform/terraform/**/*.tfplan
+            cloudflare-platform/terraform/**/plan-*.txt
           if-no-files-found: warn
