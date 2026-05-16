@@ -10,4 +10,3 @@ resource "cloudflare_ruleset" "api_shield_schema_validation" {
     description = "Log API traffic for schema onboarding"
     enabled     = true
   }
-}

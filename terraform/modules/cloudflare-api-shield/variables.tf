@@ -1,7 +1,8 @@
-variable "zone_id" {
-  type        = string
-  description = "Cloudflare zone ID used for API logging ruleset deployment"
-  nullable    = false
+variable "cloudflare_account_id" {
+  type = string
 
-  }
-}
+variable "cloudflare_zone_id" {
+  type = string
+
+variable "cloudflare_bootstrap_token" {
+  type = string

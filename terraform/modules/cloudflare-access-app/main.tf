@@ -9,4 +9,3 @@ resource "cloudflare_zero_trust_access_application" "this" {
   enable_binding_cookie = true
 
   auto_redirect_to_identity = length(var.allowed_idps) == 1
-}

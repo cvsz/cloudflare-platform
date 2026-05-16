@@ -2,7 +2,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "main" {
   account_id = var.cloudflare_account_id
   name       = "zeaz-main"
   secret     = base64encode(sha256("${var.cloudflare_account_id}:${var.cloudflare_zone_id}:${var.domain}"))
-}
 
 locals {
   active_tunnel_id = "ef0355dd-8e90-45ed-a222-b5053794ed20"
@@ -19,7 +18,6 @@ locals {
     "logs.zeaz.dev",
     "tunnel.zeaz.dev"
   ]
-}
 
 resource "cloudflare_record" "tunnel_cname" {
   for_each = toset(local.tunnel_hostnames)
@@ -28,4 +26,3 @@ resource "cloudflare_record" "tunnel_cname" {
   type     = "CNAME"
   content  = "${local.active_tunnel_id}.cfargotunnel.com"
   proxied  = true
-}

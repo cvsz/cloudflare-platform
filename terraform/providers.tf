@@ -7,15 +7,11 @@ terraform {
       version = "~> 4.30"
     }
   }
-}
 
 provider "cloudflare" {
-}
 
 provider "cloudflare" {
   alias     = "dns"
-}
 
 provider "cloudflare" {
   alias     = "waf"
-}

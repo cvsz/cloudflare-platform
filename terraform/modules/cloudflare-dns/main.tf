@@ -8,7 +8,6 @@ locals {
       )
     })
   }
-}
 
 resource "cloudflare_record" "records" {
   for_each = local.normalized_records
@@ -23,12 +22,4 @@ resource "cloudflare_record" "records" {
   priority = try(each.value.priority, null)
 
   lifecycle {
-    precondition {
-      condition = (
-        contains(["A", "AAAA"], upper(each.value.type))
-        ? length(trim(each.value.resolved_value)) > 0
-        : true
-      )
-    }
   }
-}

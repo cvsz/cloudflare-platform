@@ -2,7 +2,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "this" {
   account_id = var.account_id
   name       = var.name
   secret     = var.secret
-}
 
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "this" {
   count      = length(var.ingress_rules) > 0 ? 1 : 0
@@ -18,4 +17,3 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "this" {
       }
     }
   }
-}

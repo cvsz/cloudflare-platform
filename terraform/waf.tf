@@ -13,4 +13,3 @@ resource "cloudflare_ruleset" "waf_entrypoint" {
       id = "efb7b8c949ac4650a09736fc376e9aee"
     }
   }
-}

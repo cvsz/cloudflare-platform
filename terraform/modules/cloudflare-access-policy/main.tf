@@ -25,4 +25,3 @@ resource "cloudflare_zero_trust_access_policy" "this" {
       login_method = ["mfa"]
     }
   }
-}

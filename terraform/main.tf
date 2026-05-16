@@ -1,7 +1,6 @@
 locals {
   enterprise  = lower(var.plan_tier) == "enterprise"
   waf_enabled = var.enable_waf
-}
 
 module "dns" {
   source  = "./modules/cloudflare-dns"
@@ -30,13 +29,11 @@ module "dns" {
       comment = "Primary API endpoint"
     }
   }
-}
 
 module "api_shield" {
   count   = local.enterprise ? 1 : 0
   source  = "./modules/cloudflare-api-shield"
   zone_id = var.cloudflare_zone_id
-}
 
 module "waf" {
   count  = local.waf_enabled ? 1 : 0
@@ -48,25 +45,21 @@ module "waf" {
 
   zone_id       = var.cloudflare_zone_id
   redirect_host = var.domain
-}
 
 module "workers" {
   source     = "./modules/cloudflare-workers"
   account_id = var.cloudflare_account_id
   name       = "edge-worker"
-}
 
 module "r2" {
   source     = "./modules/cloudflare-r2"
   account_id = var.cloudflare_account_id
   name       = "platform-artifacts"
-}
 
 module "d1" {
   source     = "./modules/cloudflare-d1"
   account_id = var.cloudflare_account_id
   name       = "platform-db"
-}
 
 module "access_app_platform" {
   count = var.enable_zero_trust ? 1 : 0
@@ -75,7 +68,6 @@ module "access_app_platform" {
   account_id = var.cloudflare_account_id
   name       = "platform-access"
   domain     = "auth.${var.domain}"
-}
 
 module "access_policy_platform" {
   count = var.enable_zero_trust ? 1 : 0
@@ -85,7 +77,6 @@ module "access_policy_platform" {
   application_id        = module.access_app_platform[0].application_id
   name                  = "allow-corp"
   include_email_domains = [var.domain]
-}
 
 module "saml_provider_platform" {
   count = var.enable_zero_trust ? 1 : 0
@@ -95,11 +86,9 @@ module "saml_provider_platform" {
   name          = "corp-idp"
   provider_type = var.identity_provider_type
   metadata_url  = var.identity_provider_metadata_url
-}
 
 module "tunnel_platform" {
   source     = "./modules/cloudflare-tunnel"
   account_id = var.cloudflare_account_id
   name       = "platform-tunnel"
   secret     = var.tunnel_secret
-}

@@ -1,13 +1,8 @@
-variable "account_id" {
-  type        = string
-  description = "Account ID"
-  nullable    = true
-  default     = null
-}
+variable "cloudflare_account_id" {
+  type = string
 
-variable "name" {
-  type        = string
-  description = "Resource name"
-  nullable    = true
-  default     = null
-}
+variable "cloudflare_zone_id" {
+  type = string
+
+variable "cloudflare_bootstrap_token" {
+  type = string

@@ -9,7 +9,6 @@ resource "cloudflare_zero_trust_access_identity_provider" "saml" {
     sso_target_url = var.metadata_url
     attributes     = var.attributes
   }
-}
 
 resource "cloudflare_zero_trust_access_identity_provider" "oidc" {
   count      = var.provider_type == "oidc" ? 1 : 0
@@ -23,4 +22,3 @@ resource "cloudflare_zero_trust_access_identity_provider" "oidc" {
     client_secret = var.oidc_client_secret
     claims        = ["email", "name", "groups", "role"]
   }
-}

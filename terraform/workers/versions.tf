@@ -6,6 +6,4 @@ terraform {
       version = "~> 5.19"
     }
   }
-}
 provider "cloudflare" {
-}

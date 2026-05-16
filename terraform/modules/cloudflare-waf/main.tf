@@ -10,7 +10,6 @@ resource "cloudflare_zone_settings_override" "tls_hardening" {
     min_tls_version          = "1.2"
     opportunistic_encryption = "on"
   }
-}
 
 resource "cloudflare_ruleset" "waf_managed" {
   zone_id = var.zone_id
@@ -30,7 +29,6 @@ resource "cloudflare_ruleset" "waf_managed" {
       }
     }
   }
-}
 
 resource "cloudflare_ruleset" "firewall_custom" {
   zone_id = var.zone_id
@@ -51,7 +49,6 @@ resource "cloudflare_ruleset" "firewall_custom" {
     description = "Block common probing attacks"
     enabled     = true
   }
-}
 
 resource "cloudflare_ruleset" "cache" {
   zone_id = var.zone_id
@@ -77,7 +74,6 @@ resource "cloudflare_ruleset" "cache" {
       }
     }
   }
-}
 
 resource "cloudflare_ruleset" "redirects" {
   zone_id = var.zone_id
@@ -101,4 +97,3 @@ resource "cloudflare_ruleset" "redirects" {
       }
     }
   }
-}
