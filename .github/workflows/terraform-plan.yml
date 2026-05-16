@@ -24,85 +24,17 @@ jobs:
     defaults:
       run:
         shell: bash
-        # $GITHUB_WORKSPACE is already the repo root — no subdirectory prefix needed
         working-directory: ${{ github.workspace }}
 
     steps:
-      # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v6
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-      # ── 2. Debug — show workspace layout and locate load-env.sh ─────────────
-      #    Remove this step once the path is confirmed working.
-      - name: Debug — verify workspace layout
-        run: |
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo "--- repo root ---"
-          ls "$GITHUB_WORKSPACE"
-          echo "--- searching for load-env.sh ---"
-          find "$GITHUB_WORKSPACE" -name "load-env.sh" 2>/dev/null || echo "NOT FOUND"
-
-      # ── 3. Static analysis ───────────────────────────────────────────────────
       - name: Validate shell scripts syntax
         run: find scripts -type f -name '*.sh' -print0 | xargs -0 -r -I{} bash -n {}
 
-      # ── 4. Preflight — fail immediately if any secret is not configured ──────
-      - name: Preflight — verify secrets are configured
-        env:
-          CF_ACCOUNT_ID:    ${{ secrets.CF_ACCOUNT_ID }}
-          CF_ZONE_ID:       ${{ secrets.CF_ZONE_ID }}
-          CF_API_TOKEN:     ${{ secrets.CF_API_TOKEN }}
-          CF_DNS_TOKEN:     ${{ secrets.CF_DNS_TOKEN }}
-          CF_ZT_TOKEN:      ${{ secrets.CF_ZT_TOKEN }}
-          CF_WORKERS_TOKEN: ${{ secrets.CF_WORKERS_TOKEN }}
-          CF_WAF_TOKEN:     ${{ secrets.CF_WAF_TOKEN }}
-          CF_TUNNEL_TOKEN:  ${{ secrets.CF_TUNNEL_TOKEN }}
-          CF_R2_TOKEN:      ${{ secrets.CF_R2_TOKEN }}
-        run: |
-          missing=0
-          for var in \
-            CF_ACCOUNT_ID \
-            CF_ZONE_ID \
-            CF_API_TOKEN \
-            CF_DNS_TOKEN \
-            CF_ZT_TOKEN \
-            CF_WORKERS_TOKEN \
-            CF_WAF_TOKEN \
-            CF_TUNNEL_TOKEN \
-            CF_R2_TOKEN; do
-            if [[ -z "${!var:-}" ]]; then
-              echo "::error::Secret not configured: $var — add it at Settings → Secrets → Actions"
-              (( missing++ )) || true
-            fi
-          done
-          (( missing == 0 )) || exit 1
-
-      # ── 5. Load environment ──────────────────────────────────────────────────
-      #    $GITHUB_WORKSPACE = /home/runner/work/cloudflare-platform/cloudflare-platform
-      #    Script lives at:    <repo-root>/scripts/cloudflare/load-env.sh
-      #    NOT at:             <repo-root>/cloudflare-platform/scripts/... (that would double the name)
-      - name: Load environment
-        env:
-          CF_ACCOUNT_ID:       ${{ secrets.CF_ACCOUNT_ID }}
-          CF_ZONE_ID:          ${{ secrets.CF_ZONE_ID }}
-          CF_API_TOKEN:        ${{ secrets.CF_API_TOKEN }}
-          CF_DNS_TOKEN:        ${{ secrets.CF_DNS_TOKEN }}
-          CF_ZT_TOKEN:         ${{ secrets.CF_ZT_TOKEN }}
-          CF_WORKERS_TOKEN:    ${{ secrets.CF_WORKERS_TOKEN }}
-          CF_WAF_TOKEN:        ${{ secrets.CF_WAF_TOKEN }}
-          CF_TUNNEL_TOKEN:     ${{ secrets.CF_TUNNEL_TOKEN }}
-          CF_R2_TOKEN:         ${{ secrets.CF_R2_TOKEN }}
-          CF_AUDIT_TOKEN:      ${{ secrets.CF_AUDIT_TOKEN }}
-          CF_AI_GATEWAY_TOKEN: ${{ secrets.CF_AI_GATEWAY_TOKEN }}
-          CF_AI_GATEWAY_SLUG:  ${{ secrets.CF_AI_GATEWAY_SLUG }}
-          STRICT_ENV: "true"
-        run: |
-          chmod +x "$GITHUB_WORKSPACE/scripts/cloudflare/load-env.sh"
-          "$GITHUB_WORKSPACE/scripts/cloudflare/load-env.sh"
-
-      # ── 6. Toolchain ─────────────────────────────────────────────────────────
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
         env:
@@ -111,28 +43,45 @@ jobs:
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v2
 
-      # ── 7. Plan ──────────────────────────────────────────────────────────────
-      - name: Run Terraform plan
-        env:
-          ENVIRONMENT:    dev
-          PRIMARY_DOMAIN: zeaz.dev
-          CONFIRM_APPLY:  "no"
-          # TF_VAR_* — Terraform reads these as input variables automatically.
-          # CF_* in $GITHUB_ENV (set by load-env.sh) cover shell tooling;
-          # Terraform needs its own TF_VAR_-prefixed copies.
-          TF_VAR_cf_api_token:                   ${{ secrets.CF_API_TOKEN }}
-          TF_VAR_cf_dns_token:                   ${{ secrets.CF_DNS_TOKEN }}
-          TF_VAR_cf_zone_id:                     ${{ secrets.CF_ZONE_ID }}
-          TF_VAR_cf_account_id:                  ${{ secrets.CF_ACCOUNT_ID }}
-          TF_VAR_cf_zt_token:                    ${{ secrets.CF_ZT_TOKEN }}
-          TF_VAR_cf_workers_token:               ${{ secrets.CF_WORKERS_TOKEN }}
-          TF_VAR_cf_waf_token:                   ${{ secrets.CF_WAF_TOKEN }}
-          TF_VAR_cf_tunnel_token:                ${{ secrets.CF_TUNNEL_TOKEN }}
-          TF_VAR_cf_r2_token:                    ${{ secrets.CF_R2_TOKEN }}
-          TF_VAR_identity_provider_metadata_url: ${{ secrets.IDENTITY_PROVIDER_METADATA_URL }}
-        run: make tf-plan
+      - name: Terraform fmt check
+        run: make tf-fmt-check
 
-      # ── 8. Artifacts ─────────────────────────────────────────────────────────
+      - name: Terraform validate
+        env:
+          TF_VAR_cloudflare_account_id: ${{ secrets.CF_ACCOUNT_ID || '00000000000000000000000000000000' }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CF_ZONE_ID || '00000000000000000000000000000000' }}
+          TF_VAR_cloudflare_bootstrap_token: ${{ secrets.CF_API_TOKEN || 'ci-validation-token-not-used-for-network-calls' }}
+          TF_VAR_primary_domain: zeaz.dev
+        run: make tf-validate
+
+      - name: Terraform plan
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          ENVIRONMENT: dev
+          PRIMARY_DOMAIN: zeaz.dev
+          CONFIRM_APPLY: "no"
+          TF_VAR_cloudflare_account_id: ${{ secrets.CF_ACCOUNT_ID }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CF_ZONE_ID }}
+          TF_VAR_cloudflare_bootstrap_token: ${{ secrets.CF_API_TOKEN }}
+          TF_VAR_primary_domain: zeaz.dev
+        run: |
+          missing=0
+          for var in TF_VAR_cloudflare_account_id TF_VAR_cloudflare_zone_id TF_VAR_cloudflare_bootstrap_token; do
+            if [[ -z "${!var:-}" ]]; then
+              echo "::error::Missing required secret-backed Terraform variable: $var"
+              missing=$((missing + 1))
+            fi
+          done
+          (( missing == 0 )) || exit 1
+          make tf-plan
+
+      - name: Explain skipped Terraform plan
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        run: |
+          echo "Terraform validate completed."
+          echo "Terraform plan is skipped for pull_request events because secrets are intentionally unavailable."
+          echo "Run this workflow manually after configuring CF_ACCOUNT_ID, CF_ZONE_ID, and CF_API_TOKEN to execute terraform plan."
+
       - name: Upload Terraform plan artifacts
         if: ${{ hashFiles('terraform/**/*.tfplan', 'terraform/**/plan-*.txt') != '' }}
         uses: actions/upload-artifact@v7
