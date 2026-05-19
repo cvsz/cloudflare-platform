@@ -26,5 +26,12 @@ class WalletService:
     def __init__(self, eth_client: EthereumClient) -> None:
         self.eth_client = eth_client
 
-    def transfer(self, from_address: str, to_address: str, amount_eth: float, private_key: str) -> str:
-        return self.eth_client.transfer_eth(from_address, to_address, amount_eth, private_key)
+    def request_transfer_signature(self, from_address: str, to_address: str, amount_eth: float) -> str:
+        # 1. Validate Balance & State
+        # 2. Trigger Simulation
+        # 3. Create Orchestration Record
+        # 4. Return Request ID for MPC ceremony
+        import uuid
+        request_id = str(uuid.uuid4())
+        print(f"[WalletService] Signing request created: {request_id} for {amount_eth} ETH from {from_address}")
+        return request_id

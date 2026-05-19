@@ -60,7 +60,42 @@ export const buildApp = (deps: Deps = {}) => {
   app.post('/v1/auth/login', async (req, reply) => { const parsed = loginSchema.safeParse(req.body); if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() }); const user = await state.getUser(parsed.data.email); if (!user || user.password !== parsed.data.password) return reply.code(401).send({ error: 'Invalid credentials' }); if (!(await state.hasDevice(user.id, parsed.data.deviceId))) return reply.code(403).send({ error: 'Unbound device' }); const tokens = await app.mintTokens(user.id, parsed.data.deviceId); await state.appendAudit('auth.login', user.id, { deviceId: parsed.data.deviceId }); return tokens; });
   app.post('/v1/wallet-metadata', { preHandler: [authGuard] }, async (req: any, reply) => { const parsed = walletMetadataSchema.safeParse(req.body); if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() }); const item = { id: randomUUID(), userId: req.user.sub, ...parsed.data }; store.wallets.push(item); store.audit.push({ action: 'wallet.create', userId: req.user.sub, payload: item }); return item; });
   app.post('/v1/transactions/index', { preHandler: [authGuard] }, async (req: any, reply) => { const parsed = txIndexSchema.safeParse(req.body); if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() }); const entry = { ...parsed.data, indexedAt: new Date().toISOString() }; store.txIndex.push(entry); store.audit.push({ action: 'tx.index', userId: req.user.sub, payload: entry }); return { indexed: true, entry }; });
-  app.post('/v1/swaps/orchestrate', { preHandler: [authGuard] }, async (req: any, reply) => { const parsed = swapRequestSchema.safeParse(req.body); if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() }); const swap = { id: randomUUID(), ...parsed.data, status: 'quoted' }; store.swaps.push(swap); store.audit.push({ action: 'swap.orchestrate', userId: req.user.sub, payload: swap }); return swap; });
+  app.post('/v1/swaps/orchestrate', { preHandler: [authGuard] }, async (req: any, reply) => { 
+    const parsed = swapRequestSchema.safeParse(req.body); 
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() }); 
+
+    const aiBase = process.env.AI_SERVICE_URL ?? 'http://api:8000';
+    
+    // Phase 4: Consult Python AI Intelligence before orchestration
+    const aiRes = await fetch(`${aiBase}/v1/ai/inference/swap-recommendation`, {
+      method: 'POST',
+      headers: { 
+        'content-type': 'application/json',
+        'Authorization': req.headers.authorization // Forward credentials
+      },
+      body: JSON.stringify({
+        user_id: req.user.sub,
+        from_token: parsed.data.fromToken,
+        to_token: parsed.data.toToken,
+        amount: parsed.data.amount,
+        slippage_tolerance_bps: parsed.data.slippageBps,
+        urgency: parsed.data.urgency || 'medium'
+      })
+    });
+    
+    const aiRecommendation = await aiRes.json();
+    
+    const swap = { 
+      id: randomUUID(), 
+      ...parsed.data, 
+      status: 'quoted', 
+      intelligence: aiRecommendation 
+    }; 
+    
+    store.swaps.push(swap); 
+    store.audit.push({ action: 'swap.orchestrate', userId: req.user.sub, payload: swap }); 
+    return swap; 
+  });
   app.get('/v1/prices/:symbol', { preHandler: [authGuard] }, async (req: any, reply) => { const parsed = priceSchema.safeParse(req.params); if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() }); const cacheKey = `price:${parsed.data.symbol}`; const hit = await cache.get(cacheKey); if (hit) return { symbol: parsed.data.symbol, price: Number(hit), source: 'cache' }; const quorumPrice = await rpcPool.call('eth_getBalance', [parsed.data.symbol]) as { price: number }; const price = Number(quorumPrice.price.toFixed(2)); await cache.setex(cacheKey, 15, String(price)); await state.appendAudit('price.read', req.user.sub, { symbol: parsed.data.symbol, price }); return { symbol: parsed.data.symbol, price, source: 'oracle' }; });
   app.get('/v1/audit-logs', { preHandler: [authGuard] }, async () => ({ items: await state.readAudit() }));
 

@@ -52,10 +52,18 @@ class SwapOrchestrator:
                 )
         return quotes
 
-    def normalize_routes(self, quotes: list[RouteQuote]) -> list[RouteQuote]:
+    def normalize_routes(self, quotes: list[RouteQuote], intelligence_context: dict | None = None) -> list[RouteQuote]:
         # sort by score descending and deduplicate route ids.
         unique: dict[str, RouteQuote] = {}
         for quote in quotes:
+            # Inject AI intelligence into the score if context is provided
+            if intelligence_context:
+                # Penalty based on anomaly risk or urgency
+                risk_penalty = intelligence_context.get("risk_score", 0) * 10
+                urgency_bonus = 1.05 if intelligence_context.get("urgency") == "high" else 1.0
+                quote.score = (quote.score * urgency_bonus) - risk_penalty
+                print(f"[SwapOrchestrator] AI Intelligence applied to {quote.route_id}: Risk Penalty {risk_penalty}, Urgency Bonus {urgency_bonus}")
+            
             unique[quote.route_id] = quote
         return sorted(unique.values(), key=lambda q: q.score, reverse=True)
 
