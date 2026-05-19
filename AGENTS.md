@@ -523,7 +523,26 @@ Standard public error shape:
 
 ---
 
-## 15. DNS, Tunnels, and Networking Standards
+## 15. Frontend and UI/UX Standards
+
+All web interfaces must adhere to the **Zeaz Unified Design System**.
+
+### Core Requirements:
+- **Rich Aesthetics**: Use Glassmorphism, backdrop blurs, and premium color palettes (as defined in `ui/design-system/tokens.css`).
+- **Typography**: Primary font is `Outfit`. Fallback to `Inter` or system sans-serif.
+- **Micro-animations**: Every interactive element must have a hover state, active state, and transition (minimum 200ms).
+- **Responsive Design**: Mobile-first approach using CSS Grid and Flexbox.
+- **Deterministic States**: Clear visual feedback for "Idle", "Loading", "Success", and "Error" states.
+
+### Implementation Rules:
+- **No Inline Styles**: Use design system tokens and utility classes.
+- **Component-Based Architecture**: Organize UI logic into discrete components (even in Vanilla JS).
+- **Security Headers**: All frontend applications must be served with strict security headers (CSP, HSTS, etc.).
+- **Mock vs. Real**: Maintain clear separation between simulation logic (mocks) and production API integrations. Use environment-gated switches for connectivity.
+
+---
+
+## 16. DNS, Tunnels, and Networking Standards
 
 DNS and tunnel configuration must cover:
 
