@@ -2,6 +2,8 @@
 
 React/Vite dashboard for ZeaZ Studio AI Agent System, prepared for local `zdash.zeaz.dev` service access and Cloudflare Pages deployment under `cvsz/zeaz-platform`.
 
+The UI now implements the zDash Full System Blueprint v2.0 as a React dashboard: system overview, 9-agent roster, command architecture, trading pipeline, system modules, technology stack, trading specs, scheduler config, internal API reference, and 7-phase build roadmap.
+
 ## Local development
 
 ```bash
@@ -56,6 +58,26 @@ npm run preview
 ```bash
 npm run lint
 npm run build
+```
+
+## Cloudflare Tunnel
+
+Local service:
+
+```text
+http://127.0.0.1:3006
+```
+
+Public route:
+
+```text
+https://zdash.zeaz.dev -> http://127.0.0.1:3006
+```
+
+Apply or repair the Cloudflare Tunnel route from the repo root:
+
+```bash
+ops/bin/zeaz-cloudflare-zdash-route
 ```
 
 ## Cloudflare Pages
