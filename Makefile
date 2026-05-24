@@ -26,7 +26,7 @@ export STRICT_TOOLS
 export CODEX_CLOUD
 export STRICT_ENV
 
-.PHONY: help bootstrap setup env load-env validate validate-agent ci-validate validate-env maintenance test fmt fmt-check lint shellcheck yaml-validate policy-test sbom-generation sbom-validate security-validate tunnel-validation waf-validation tf-init tf-fmt tf-fmt-check tf-validate tf-plan tf-plan-out tf-apply tf-apply-plan tf-destroy tf-state-rm-waf tf-env-init tf-env-validate tf-env-plan tofu-init tofu-validate tofu-plan drift drift-detect token-clean token-rotate-dry token-rotate security-scan sbom cosign-sign doctor clean phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6 phase-f7 workflow-policy workflow-validate gitops-validate ci health-zveo health-zwallet health-platform ssh-origin-setup ssh-origin-health ssh-route ssh-public-health backup-platform install-platform-ops
+.PHONY: help bootstrap setup env load-env validate validate-agent ci-validate validate-env maintenance test fmt fmt-check lint shellcheck yaml-validate policy-test sbom-generation sbom-validate security-validate secret-scan tunnel-validation waf-validation waf-validate tf-init tf-fmt tf-fmt-check tf-validate tf-plan tf-plan-out tf-apply tf-apply-plan tf-destroy tf-state-rm-waf tf-env-init tf-env-validate tf-env-plan tofu-init tofu-validate tofu-plan drift drift-detect token-clean token-rotate-dry token-rotate security-scan sbom cosign-sign doctor clean phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6 phase-f7 workflow-policy workflow-validate gitops-validate ci health-zveo health-zwallet health-platform ssh-origin-setup ssh-origin-health ssh-route ssh-public-health backup-platform install-platform-ops
 
 help:
 	@printf '%s\n' \
@@ -84,10 +84,11 @@ help:
 	'Tokens:' \
 	'  make token-clean            Dry-run token cleanup' \
 	'  make token-rotate-dry       Dry-run token regeneration' \
-	'  make token-rotate           Live token regeneration; requires CLOUDFLARE_EMAIL/CF_GLOBAL_API_KEY' \
+	'  make token-rotate           Live token regeneration; requires CLOUDFLARE_EMAIL/CLOUDFLARE_GLOBAL_API_KEY' \
 	'' \
 	'Compatibility:' \
-	'  make policy-test sbom-generation security-validate tunnel-validation waf-validation' \
+	'  make secret-scan            Run gitleaks-only scan when available' \
+	'  make policy-test sbom-generation security-validate tunnel-validation waf-validation waf-validate' \
 	'' \
 	'Phases:' \
 	'  make phase-f1 ... phase-f7'
@@ -176,12 +177,21 @@ sbom-validate: sbom
 
 security-validate: security-scan
 
+secret-scan:
+	@if command -v gitleaks >/dev/null 2>&1; then \
+	  gitleaks detect --config security/gitleaks.toml --source . --redact; \
+	else \
+	  echo "WARN: gitleaks not installed; skipped gitleaks scan"; \
+	fi
+
 tunnel-validation:
 	@if [ -n "$${ORIGIN_HOSTS:-}" ]; then \
 	  bash scripts/tunnel-validate.sh --offline; \
 	else \
 	  echo "Tunnel validation skipped because ORIGIN_HOSTS is not configured in pull_request context"; \
 	fi
+
+waf-validate: waf-validation
 
 waf-validation:
 	@if [ "$${ENABLE_WAF:-false}" = "true" ] || [ "$${TF_VAR_enable_waf:-false}" = "true" ]; then \
@@ -273,7 +283,19 @@ token-rotate:
 	@bash scripts/cloudflare/clean-and-regenerate-tokens.sh --yes --regenerate --types all --backup --write .env.cloudflare
 
 security-scan:
-	@if [ -x scripts/security-scan.sh ]; then bash scripts/security-scan.sh; else echo "WARN: scripts/security-scan.sh missing; skipped"; fi
+	@if [ -x scripts/security-scan.sh ]; then \
+	  missing=0; \
+	  for tool in trivy semgrep gitleaks syft grype; do \
+	    command -v "$$tool" >/dev/null 2>&1 || missing=1; \
+	  done; \
+	  if [ "$$missing" -ne 0 ]; then \
+	    echo "WARN: one or more optional security tools are missing; skipped full security scan"; \
+	  else \
+	    bash scripts/security-scan.sh; \
+	  fi; \
+	else \
+	  echo "WARN: scripts/security-scan.sh missing; skipped"; \
+	fi
 
 sbom:
 	@if command -v syft >/dev/null 2>&1; then \
