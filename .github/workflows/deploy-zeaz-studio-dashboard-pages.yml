@@ -3,7 +3,7 @@ name: Deploy ZeaZ Studio Dashboard to Cloudflare Pages
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - "apps/zeaz-studio-dashboard/**"
       - ".github/workflows/deploy-zeaz-studio-dashboard-pages.yml"
@@ -49,7 +49,7 @@ jobs:
 
       - name: Ensure Cloudflare Pages project exists
         run: |
-          npx wrangler pages project create "${CLOUDFLARE_PAGES_PROJECT_NAME}" --production-branch=master || true
+          npx wrangler pages project create "${CLOUDFLARE_PAGES_PROJECT_NAME}" --production-branch=main || true
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
