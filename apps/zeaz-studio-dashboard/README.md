@@ -36,9 +36,9 @@ Recommended project settings:
 | Build command | `npm install && npm run build` |
 | Output directory | `dist` |
 
-Required GitHub secrets:
+Required Cloudflare environment names:
 
-| Secret | Purpose |
+| Name | Purpose |
 |---|---|
-| `CLOUDFLARE_API_TOKEN` | Scoped Cloudflare token for Pages deployment |
-| `CF_ACCOUNT_ID` | Cloudflare account ID |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare token for Pages deployment |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
