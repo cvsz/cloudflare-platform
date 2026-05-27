@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 
@@ -8,17 +10,40 @@ except Exception as exc:
     print(f"ERROR: PyYAML is required: {exc}")
     sys.exit(1)
 
-root = Path('.')
-files = [p for p in root.rglob('*.yml') if '.git/' not in str(p)] + [p for p in root.rglob('*.yaml') if '.git/' not in str(p)]
+ROOT = Path(".")
+SKIP_PARTS = {
+    ".git",
+    ".backup",
+    ".cloudflare-backups",
+    ".terraform",
+    ".venv",
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+}
+
+
+def should_skip(path: Path) -> bool:
+    return any(part in SKIP_PARTS for part in path.parts)
+
+
+files = []
+for pattern in ("*.yml", "*.yaml"):
+    for path in ROOT.rglob(pattern):
+        if not should_skip(path):
+            files.append(path)
+
 failed = []
-for p in sorted(set(files)):
+for path in sorted(set(files)):
     try:
-        yaml.safe_load(p.read_text())
+        yaml.safe_load(path.read_text(encoding="utf-8"))
     except Exception as exc:
-        failed.append((p, exc))
+        failed.append((path, exc))
 
 if failed:
-    for p, exc in failed:
-        print(f"INVALID: {p}: {exc}")
+    for path, exc in failed:
+        print(f"INVALID: {path}: {exc}")
     sys.exit(1)
+
 print(f"Validated {len(set(files))} YAML files")
