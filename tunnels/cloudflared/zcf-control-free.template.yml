@@ -23,7 +23,7 @@ originRequest:
   keepAliveTimeout: 90s
   noTLSVerify: false
 
- ingress:
+ingress:
   - hostname: panel.zeaz.dev
     service: http://zcf-web:3000
 
