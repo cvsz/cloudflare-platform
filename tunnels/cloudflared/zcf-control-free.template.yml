@@ -1,0 +1,45 @@
+# ZeaZ Cloudflare Control Panel — FREE NO COST cloudflared template
+#
+# Copy this file to config.yml and replace:
+# - ${CLOUDFLARE_TUNNEL_ID}
+# - credentials-file path
+#
+# This config is designed for Cloudflare Tunnel + Cloudflare Free-compatible routing.
+# It exposes local Docker services without opening inbound ports on the origin VM.
+
+tunnel: ${CLOUDFLARE_TUNNEL_ID}
+credentials-file: /etc/cloudflared/${CLOUDFLARE_TUNNEL_ID}.json
+
+metrics: 127.0.0.1:20241
+loglevel: info
+transport-loglevel: info
+no-autoupdate: false
+
+originRequest:
+  connectTimeout: 30s
+  tlsTimeout: 10s
+  tcpKeepAlive: 30s
+  keepAliveConnections: 100
+  keepAliveTimeout: 90s
+  noTLSVerify: false
+
+ ingress:
+  - hostname: panel.zeaz.dev
+    service: http://zcf-web:3000
+
+  - hostname: api.zeaz.dev
+    service: http://zcf-api:8000
+
+  - hostname: ssh.zeaz.dev
+    service: ssh://localhost:22022
+
+  - hostname: grafana.zeaz.dev
+    service: http://grafana:3000
+
+  - hostname: n8n.zeaz.dev
+    service: http://n8n:5678
+
+  - hostname: "*.zeaz.dev"
+    service: http://zcf-web:3000
+
+  - service: http_status:404
