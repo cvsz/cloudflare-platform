@@ -1,72 +1,53 @@
-# Secrets
-.gitignore
+# Secrets and local environment
 .env
+.env.*
 *.env
+.env.cloudflare
+.cloudflare-token-audit.log
+.secrets/
+secrets/*.env
 *.tfvars
 *.pem
 *.key
 *.p12
 *.agekey
 
-# Terraform
-.terraform/
-terraform.tfstate*
-crash.log
-
-# Cloudflare
+# Cloudflare generated/local state
 cloudflared/
+tunnels/cloudflared/config.yml
+.cloudflare-backups/
+.cache/
+reports/
+
+# Terraform / OpenTofu
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate*
+*.tfstate*
+*.tfplan
+terraform/tfplan
+terraform/tfplan.drift
+terraform/**/*.tfplan
+crash.log
+terraform/backend/
 
 # Python
 __pycache__/
 *.pyc
+.venv/
+.pytest_cache/
+.coverage
+coverage/
 
-# IDE
+# Node / frontend
+node_modules/
+dist/
+build/
+package-lock.json
+
+# IDE / local agent harness state
 .vscode/
 .idea/
-
-# Existing project paths
-.secrets/
-terraform/backend/
-cloudflare-platform/secrets/*.env
-cloudflare-platform/backups/
-
-# Local tooling binaries
-bin/
-
-# Generated cloudflared config
-tunnels/cloudflared/config.yml
-.cloudflare-backups/
-.env.cloudflare
-.cloudflare-token-audit.log
-.venv/
-log.txt
-terraform/tfplan
-terraform/tfplan.drift
-terraform/**/*.tfplan
-
-.terraform.lock.hcl
-# Terraform
-.terraform/
-*.tfstate*
-*.tfplan
-
-# Backups
-.backup-refactor-*
-*.bak.*
-
-# Env / secrets
-.env
-.env.*
-.env.cloudflare
-
-# Node
-node_modules/
-
-# ECC / local agent harness state
-.cache/
-
-# Misc
-.DS_Store
 .agent/
 .agents/
 .gemini/
@@ -76,7 +57,16 @@ node_modules/
 .codebuddy/
 .joycode/
 .zed/
-dist/
-package-lock.json
+
+# Backups and generated repair artifacts
+.backup/
+.backup-refactor-*
+*.bak
+*.bak.*
+log.txt
 bootstrap-generate-tokens-once.sh
 zdash.sh
+
+# OS
+.DS_Store
+Thumbs.db
