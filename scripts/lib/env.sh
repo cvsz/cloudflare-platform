@@ -10,9 +10,11 @@ readonly REQUIRED_ENV_VARS=(
   CF_ACCOUNT_ID CF_ZONE_ID CLOUDFLARE_API_TOKEN CF_DNS_TOKEN CF_WORKERS_TOKEN CF_ZT_TOKEN CF_WAF_TOKEN CF_TUNNEL_TOKEN CF_R2_TOKEN
   IDENTITY_PROVIDER_TYPE IDENTITY_PROVIDER_VENDOR IDENTITY_PROVIDER_METADATA_URL
   ENVIRONMENT REGION PRIMARY_DOMAIN ORIGIN_INFRA_TYPE ORIGIN_HOSTS
-  TERRAFORM_BACKEND_TYPE TERRAFORM_STATE_BUCKET TERRAFORM_LOCK_TABLE
+  TERRAFORM_BACKEND_TYPE
   SOPS_AGE_KEY SECRET_ROTATION_INTERVAL CLOUDFLARE_PLAN_TIER
 )
+
+readonly S3_BACKEND_REQUIRED_ENV_VARS=(TERRAFORM_STATE_BUCKET TERRAFORM_LOCK_TABLE)
 
 find_root() {
   local d="${PROJECT_ROOT:-${PWD}}"
@@ -33,6 +35,24 @@ find_root() {
   return 1
 }
 
+set_if_empty_from_alias() {
+  local canonical="$1" alias="$2"
+  if [[ -z "${!canonical:-}" && -n "${!alias:-}" ]]; then
+    export "$canonical=${!alias}"
+  fi
+}
+
+normalize_cloudflare_env_aliases() {
+  set_if_empty_from_alias CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
+  set_if_empty_from_alias CF_ZONE_ID CLOUDFLARE_ZONE_ID
+  set_if_empty_from_alias CF_DNS_TOKEN CLOUDFLARE_DNS_TOKEN
+  set_if_empty_from_alias CF_WORKERS_TOKEN CLOUDFLARE_WORKERS_TOKEN
+  set_if_empty_from_alias CF_ZT_TOKEN CLOUDFLARE_ZT_TOKEN
+  set_if_empty_from_alias CF_WAF_TOKEN CLOUDFLARE_WAF_TOKEN
+  set_if_empty_from_alias CF_TUNNEL_TOKEN CLOUDFLARE_TUNNEL_TOKEN
+  set_if_empty_from_alias CF_R2_TOKEN CLOUDFLARE_R2_TOKEN
+}
+
 load_dotenv_if_present() {
   local root=""
   root="$(find_root)" || root="${PWD}"
@@ -47,7 +67,7 @@ load_dotenv_if_present() {
   if ((${#load_files[@]} > 0)); then
     local var
     local loaded_vars=()
-    for var in "${REQUIRED_ENV_VARS[@]}" CF_AUDIT_TOKEN CF_AI_GATEWAY_TOKEN CF_AI_GATEWAY_SLUG; do
+    for var in "${REQUIRED_ENV_VARS[@]}" "${S3_BACKEND_REQUIRED_ENV_VARS[@]}" CF_AUDIT_TOKEN CF_AI_GATEWAY_TOKEN CF_AI_GATEWAY_SLUG; do
       if [[ -n "${!var+x}" ]]; then
         loaded_vars+=("$var")
       fi
@@ -67,11 +87,15 @@ load_dotenv_if_present() {
     done
   fi
 
+  normalize_cloudflare_env_aliases
   : "${CF_AI_GATEWAY_SLUG:=zeaz}"
-  export CF_AI_GATEWAY_SLUG
+  : "${COST_LOCK:=true}"
+  export CF_AI_GATEWAY_SLUG COST_LOCK
 }
 
 require_env_presence() {
+  normalize_cloudflare_env_aliases
+
   local missing=0
   local var
   for var in "${REQUIRED_ENV_VARS[@]}"; do
@@ -80,5 +104,15 @@ require_env_presence() {
       printf 'ERROR: %s: missing\n' "${var}" >&2
     fi
   done
+
+  if [[ "${TERRAFORM_BACKEND_TYPE:-}" == "s3" ]]; then
+    for var in "${S3_BACKEND_REQUIRED_ENV_VARS[@]}"; do
+      if [[ -z "${!var:-}" ]]; then
+        missing=$((missing + 1))
+        printf 'ERROR: %s: missing for s3 backend\n' "${var}" >&2
+      fi
+    done
+  fi
+
   return "${missing}"
 }
