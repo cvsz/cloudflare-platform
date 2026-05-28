@@ -44,15 +44,23 @@ Zeaz platform ops:
   make install-platform-ops   Install ops scripts into /usr/local/bin
 
 Terraform root:
-  make tf-init                terraform -chdir=terraform init
-  make tf-validate            terraform -chdir=terraform validate
-  make tf-plan                terraform -chdir=terraform plan
-  make tf-plan-out            terraform plan -out=TF_PLAN_FILE
+  make tf-init                Load scoped env, then terraform -chdir=terraform init
+  make tf-validate            Init, then terraform -chdir=terraform validate
+  make tf-plan                Init, then terraform -chdir=terraform plan
+  make tf-plan-out            Save plan to terraform/$(TF_PLAN_FILE), default tfplan
   make tf-apply-plan CONFIRM_APPLY=yes
-  make tf-state-rm-waf CONFIRM_APPLY=yes
+                              Apply saved terraform/$(TF_PLAN_FILE)
   make tf-apply CONFIRM_APPLY=yes
+                              Auto-approve direct apply after explicit confirmation
   make tf-destroy CONFIRM_APPLY=yes
-  make drift                  terraform plan -detailed-exitcode
+                              Auto-approve destroy after explicit confirmation
+  make tf-state-rm-waf CONFIRM_APPLY=yes
+                              Remove module.waf resources from Terraform state only
+  make drift                  Run terraform plan -detailed-exitcode; exits 2 on drift
+
+Terraform options:
+  TF_PLAN_FILE=myplan         Override saved plan file name
+  TF_ARGS='-refresh=false'    Pass extra args to init/plan/apply/destroy/drift
 
 Terraform env roots:
   make tf-env-init ENVIRONMENT=prod
@@ -67,8 +75,9 @@ OpenTofu:
 Tokens:
   make token-clean            Dry-run token cleanup
   make token-verify           Verify Cloudflare token env without printing token values
-  make token-rotate-dry       Dry-run token regeneration
-  make token-rotate           Live token regeneration; requires CLOUDFLARE_BOOTSTRAP_TOKEN and CLOUDFLARE_ZONE_ID
+  make token-verify-strict    Strict token verification; fails on invalid token
+  make token-rotate-dry       Dry-run token regeneration with permission preflight
+  make token-rotate           Live token regeneration; writes .env.cloudflare
 
 Compatibility:
   make secret-scan            Run gitleaks-only scan when available
