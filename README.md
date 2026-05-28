@@ -135,32 +135,32 @@ Cloudflare account requirement: `zeaz.dev` must already be added to Cloudflare. 
 git clone https://github.com/cvsz/zeaz-platform.git
 cd zeaz-platform
 
-cp .env.example .env
-chmod 600 .env
+make setup-free
 ```
+
+`make setup-free` creates or preserves `.env`, backs up any existing `.env`, and enforces Free/no-cost defaults.
 
 Fill `.env` using canonical `CF_*` variables. Legacy `CLOUDFLARE_*` aliases are accepted by validators, but new config should use `CF_*` names.
 
-### 2. Validate local structure
+### 2. Validate source health
 
 ```bash
 python3 -m pip install -r requirements-dev.txt
-python3 python/cfstack_validate_env.py
+make validate-env
 python3 scripts/validate-yaml.py
 make doctor
 make yaml-validate
 ```
 
-Use strict mode after real values are filled:
+`make validate-env` is advisory and does not fail on missing deployment secrets. Use strict mode only after real values are filled:
 
 ```bash
-python3 python/cfstack_validate_env.py --strict
+make validate-env-strict
 ```
 
 ### 3. Refresh Cloudflare docs context for agents
 
 ```bash
-chmod +x scripts/cloudflare/fetch-cloudflare-llms-context.sh
 bash scripts/cloudflare/fetch-cloudflare-llms-context.sh
 ```
 
@@ -190,7 +190,7 @@ All apply/destroy workflows should remain manually approved.
 
 ## Environment variables
 
-Copy `.env.example` to `.env` and fill values locally.
+Copy `.env.example` to `.env` or run `make setup-free`, then fill values locally.
 
 ### Cloudflare core
 
@@ -251,9 +251,10 @@ zeaz-platform/
 ```bash
 make doctor                 # show local tool status
 make test                   # run pytest when available
-make validate-env           # validate .env with Python validator
+make validate-env           # advisory environment check for repo/CI health
+make validate-env-strict    # strict deployment validation with real values
 make yaml-validate          # validate active YAML files
-make shellcheck             # shellcheck scripts when installed
+make shellcheck             # shellcheck tracked scripts when installed
 make tf-fmt-check           # Terraform/OpenTofu formatting check
 make tf-validate            # Terraform validation
 make tofu-validate          # OpenTofu validation when installed
@@ -262,6 +263,8 @@ make token-rotate-dry       # dry-run token regeneration
 make token-rotate           # live token regeneration; use only after review
 make drift-detect           # Terraform drift check
 make security-scan          # optional security tools if installed
+make docs-context           # refresh Cloudflare docs context cache
+make upgrade-report         # generate reports/project-upgrade-report.md
 ```
 
 ---
@@ -297,7 +300,7 @@ Safety rules:
 
 | Phase | Name | Objective | Primary commands |
 |---|---|---|---|
-| F1 | Context + Variables | Validate local env, plan tier, backend, and cost lock | `make validate-env` |
+| F1 | Context + Variables | Advisory source/env check, then strict deployment validation after real secrets are filled | `make validate-env` / `make validate-env-strict` |
 | F2 | Terraform Foundation | Init and validate IaC | `make tf-validate` / `make tofu-validate` |
 | F3 | Zero Trust + Identity | Configure Access apps/policies and identity metadata | Terraform plan/apply after review |
 | F4 | DNS + Tunnels | Provision DNS and cloudflared templates | tunnel validation + Terraform |
