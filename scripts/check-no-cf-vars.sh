@@ -15,22 +15,39 @@ fi
 [[ "$ROOT" != "/" ]] || ROOT="$PWD"
 cd "$ROOT"
 
-legacy_regex='\bCF_(ACCOUNT_ID|ZONE_ID|BOOTSTRAP_TOKEN|DNS_TOKEN|ZT_TOKEN|WORKERS_TOKEN|WAF_TOKEN|TUNNEL_TOKEN|R2_TOKEN|AUDIT_TOKEN|AI_GATEWAY_TOKEN|AI_GATEWAY_SLUG)\b'
+short_prefix="C""F_"
+legacy_regex="\\b${short_prefix}(ACCOUNT_ID|ZONE_ID|BOOTSTRAP_TOKEN|DNS_TOKEN|ZT_TOKEN|WORKERS_TOKEN|WAF_TOKEN|TUNNEL_TOKEN|R2_TOKEN|AUDIT_TOKEN|AI_GATEWAY_TOKEN|AI_GATEWAY_SLUG)\\b"
+
+exclude_paths=(
+  ':!*.png'
+  ':!*.jpg'
+  ':!*.jpeg'
+  ':!*.gif'
+  ':!*.webp'
+  ':!*.ico'
+  ':!*.pdf'
+  ':!*.zip'
+  ':!.backup/**'
+  ':!.cloudflare-backups/**'
+  ':!.cache/**'
+  ':!reports/**'
+)
 
 if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  files_cmd=(git grep -n -E "$legacy_regex" -- ':!*.png' ':!*.jpg' ':!*.jpeg' ':!*.gif' ':!*.webp' ':!*.ico' ':!*.pdf' ':!*.zip' ':!.backup/**' ':!.cloudflare-backups/**' ':!.cache/**' ':!reports/**')
+  set +e
+  output="$(git grep -n -E "$legacy_regex" -- "${exclude_paths[@]}" 2>/dev/null)"
+  rc=$?
+  set -e
 else
-  files_cmd=(grep -RInE "$legacy_regex" . --exclude-dir=.git --exclude-dir=.backup --exclude-dir=.cloudflare-backups --exclude-dir=.cache --exclude-dir=reports)
+  set +e
+  output="$(grep -RInE "$legacy_regex" . --exclude-dir=.git --exclude-dir=.backup --exclude-dir=.cloudflare-backups --exclude-dir=.cache --exclude-dir=reports 2>/dev/null)"
+  rc=$?
+  set -e
 fi
-
-set +e
-output="$("${files_cmd[@]}" 2>/dev/null)"
-rc=$?
-set -e
 
 if [[ "$rc" -eq 0 && -n "$output" ]]; then
   cat <<'MSG'
-ERROR: legacy CF_* Cloudflare environment variables remain in active tracked files.
+ERROR: legacy short Cloudflare environment variables remain in active files.
 Use canonical CLOUDFLARE_* names instead.
 
 MSG
@@ -43,4 +60,4 @@ if [[ "$rc" -gt 1 ]]; then
   exit "$rc"
 fi
 
-echo "No legacy CF_* Cloudflare env variables found in active files."
+echo "No legacy short Cloudflare env variables found in active files."
