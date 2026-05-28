@@ -2,46 +2,41 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-find_root(){
-  local d="${PROJECT_ROOT:-${PWD}}"
-  while [[ "$d" != "/" ]]; do
-    if [[ -d "$d/.git" ]] || [[ -d "$d/terraform" ]] || [[ -f "$d/.env.example" ]] || [[ -f "$d/README.md" ]]; then
-      printf '%s\n' "$d"
-      return 0
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${PROJECT_ROOT:-}"
+if [[ -z "$ROOT" ]]; then
+  ROOT="$PWD"
+  while [[ "$ROOT" != "/" ]]; do
+    if [[ -d "$ROOT/.git" || -d "$ROOT/terraform" || -f "$ROOT/.env.example" || -f "$ROOT/Makefile" ]]; then
+      break
     fi
-    d="$(dirname "$d")"
+    ROOT="$(dirname "$ROOT")"
   done
-  printf '%s\n' "${PROJECT_ROOT:-${PWD}}"
-}
+fi
+[[ "$ROOT" != "/" ]] || ROOT="$PWD"
 
-ROOT="$(find_root)"
-ENV_FILE="${ENV_FILE:-$ROOT/.env}"
-TOKEN_ENV_FILE="${TOKEN_ENV_FILE:-$ROOT/.env.cloudflare}"
-
-load_file(){
-  local file="$1"
-  [[ -f "$file" ]] || return 0
-  set -a
-  # shellcheck disable=SC1090
-  source "$file"
-  set +a
-}
+# shellcheck source=scripts/cloudflare/lib/env-scope.sh
+source "$ROOT/scripts/cloudflare/lib/env-scope.sh"
+cf_load_cloudflare_env_scope
+cd "$PROJECT_ROOT"
 
 normalize_bool(){
-  case "$1" in
-    true|TRUE|True) printf 'true\n' ;;
-    false|FALSE|False) printf 'false\n' ;;
+  case "${1:-}" in
+    true|TRUE|True|1|yes|YES|Yes) printf 'true\n' ;;
+    false|FALSE|False|0|no|NO|No|"") printf 'false\n' ;;
     *) return 1 ;;
   esac
 }
 
-load_file "$TOKEN_ENV_FILE"
-load_file "$ENV_FILE"
-
-export TF_VAR_cf_api_token="${TF_VAR_cf_api_token:-${CLOUDFLARE_API_TOKEN:-}}"
-export TF_VAR_cf_dns_token="${TF_VAR_cf_dns_token:-${CLOUDFLARE_DNS_TOKEN:-}}"
+# Terraform provider/API token preference:
+#   1. Existing TF_VAR_* from caller
+#   2. Scoped generated token for the specific module class
+#   3. Generic Cloudflare API token
+#   4. Bootstrap token as last resort for local plan/validate only
+export TF_VAR_cf_api_token="${TF_VAR_cf_api_token:-${CLOUDFLARE_API_TOKEN:-${CLOUDFLARE_BOOTSTRAP_TOKEN:-}}}"
+export TF_VAR_cf_dns_token="${TF_VAR_cf_dns_token:-${CLOUDFLARE_DNS_TOKEN:-${CLOUDFLARE_API_TOKEN:-${CLOUDFLARE_BOOTSTRAP_TOKEN:-}}}}"
 export TF_VAR_cf_zone_id="${TF_VAR_cf_zone_id:-${CLOUDFLARE_ZONE_ID:-}}"
-export TF_VAR_cf_waf_token="${TF_VAR_cf_waf_token:-${CLOUDFLARE_WAF_TOKEN:-}}"
+export TF_VAR_cf_waf_token="${TF_VAR_cf_waf_token:-${CLOUDFLARE_WAF_TOKEN:-${CLOUDFLARE_API_TOKEN:-${CLOUDFLARE_BOOTSTRAP_TOKEN:-}}}}"
 export TF_VAR_cf_account_id="${TF_VAR_cf_account_id:-${CLOUDFLARE_ACCOUNT_ID:-}}"
 export TF_VAR_domain="${TF_VAR_domain:-${PRIMARY_DOMAIN:-zeaz.dev}}"
 export TF_VAR_plan_tier="${TF_VAR_plan_tier:-${CLOUDFLARE_PLAN_TIER:-Free}}"
