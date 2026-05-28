@@ -90,7 +90,7 @@ help:
 	'Tokens:' \
 	'  make token-clean            Dry-run token cleanup' \
 	'  make token-rotate-dry       Dry-run token regeneration' \
-	'  make token-rotate           Live token regeneration; requires CF_BOOTSTRAP_TOKEN' \
+	'  make token-rotate           Live token regeneration; requires CF_BOOTSTRAP_TOKEN and CF_ZONE_ID' \
 	'' \
 	'Compatibility:' \
 	'  make secret-scan            Run gitleaks-only scan when available' \
@@ -298,13 +298,13 @@ drift-detect: tf-init
 	esac
 
 token-clean:
-	@bash scripts/cloudflare/clean-and-regenerate-tokens.sh --dry-run --keep-most 1 --unused-days 90
+	@bash scripts/cloudflare/run-token-rotation.sh --dry-run --keep-most 1 --unused-days 90
 
 token-rotate-dry:
-	@bash scripts/cloudflare/clean-and-regenerate-tokens.sh --dry-run --regenerate --types all --backup --write .env.cloudflare
+	@bash scripts/cloudflare/run-token-rotation.sh --dry-run --regenerate --types all --backup --write .env.cloudflare
 
 token-rotate:
-	@bash scripts/cloudflare/clean-and-regenerate-tokens.sh --yes --regenerate --types all --backup --write .env.cloudflare
+	@bash scripts/cloudflare/run-token-rotation.sh --yes --regenerate --types all --backup --write .env.cloudflare
 
 security-scan:
 	@if [ -x scripts/security-scan.sh ]; then \
