@@ -2,49 +2,17 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-ROOT="${PROJECT_ROOT:-}"
-if [[ -z "$ROOT" ]]; then
-  ROOT="$PWD"
-  while [[ "$ROOT" != "/" ]]; do
-    if [[ -d "$ROOT/.git" || -f "$ROOT/.env.example" || -f "$ROOT/Makefile" ]]; then
-      break
-    fi
-    ROOT="$(dirname "$ROOT")"
-  done
-fi
-[[ "$ROOT" != "/" ]] || ROOT="$PWD"
-cd "$ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/cloudflare/lib/env-scope.sh
+source "$SCRIPT_DIR/lib/env-scope.sh"
+cf_load_cloudflare_env_scope
+cd "$PROJECT_ROOT"
 
 API_BASE="${CLOUDFLARE_API_BASE:-https://api.cloudflare.com/client/v4}"
 
-log(){ printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
-warn(){ log "WARN: $*" >&2; }
-die(){ log "ERROR: $*" >&2; exit 1; }
-
-mask(){
-  local value="${1:-}"
-  local len="${#value}"
-  if [[ "$len" -le 8 ]]; then
-    printf '<missing-or-too-short>'
-  else
-    printf '%s...%s len=%s' "${value:0:4}" "${value: -4}" "$len"
-  fi
-}
-
-file_has_key(){
-  local file="$1" key="$2"
-  [[ -f "$file" ]] || return 1
-  grep -qE "^${key}=" "$file"
-}
-
-load_env_file(){
-  local file="$1"
-  [[ -f "$file" ]] || return 0
-  set -a
-  # shellcheck disable=SC1090
-  source "$file"
-  set +a
-}
+log(){ cf_env_log "$*"; }
+warn(){ cf_env_warn "$*"; }
+die(){ cf_env_die "$*"; }
 
 request_verify(){
   local label="$1" endpoint="$2" body_file err_file http_code curl_rc body err success
@@ -91,24 +59,12 @@ request_verify(){
   return 0
 }
 
-load_env_file .env
-load_env_file .env.cloudflare
+cf_print_env_sources CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ZONE_ID CLOUDFLARE_BOOTSTRAP_TOKEN
+cf_require_env CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ZONE_ID CLOUDFLARE_BOOTSTRAP_TOKEN || exit 1
 
-log "Cloudflare env source check"
-for key in CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ZONE_ID CLOUDFLARE_BOOTSTRAP_TOKEN; do
-  sources=()
-  file_has_key .env "$key" && sources+=(.env)
-  file_has_key .env.cloudflare "$key" && sources+=(.env.cloudflare)
-  printf '%s sources: %s\n' "$key" "${sources[*]:-<none>}"
-done
-
-[[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] || die "CLOUDFLARE_ACCOUNT_ID is missing"
-[[ -n "${CLOUDFLARE_ZONE_ID:-}" ]] || die "CLOUDFLARE_ZONE_ID is missing"
-[[ -n "${CLOUDFLARE_BOOTSTRAP_TOKEN:-}" ]] || die "CLOUDFLARE_BOOTSTRAP_TOKEN is missing"
-
-printf 'CLOUDFLARE_ACCOUNT_ID: %s\n' "$(mask "$CLOUDFLARE_ACCOUNT_ID")"
-printf 'CLOUDFLARE_ZONE_ID: %s\n' "$(mask "$CLOUDFLARE_ZONE_ID")"
-printf 'CLOUDFLARE_BOOTSTRAP_TOKEN: %s\n' "$(mask "$CLOUDFLARE_BOOTSTRAP_TOKEN")"
+printf 'CLOUDFLARE_ACCOUNT_ID: %s\n' "$(cf_mask "$CLOUDFLARE_ACCOUNT_ID")"
+printf 'CLOUDFLARE_ZONE_ID: %s\n' "$(cf_mask "$CLOUDFLARE_ZONE_ID")"
+printf 'CLOUDFLARE_BOOTSTRAP_TOKEN: %s\n' "$(cf_mask "$CLOUDFLARE_BOOTSTRAP_TOKEN")"
 
 command -v curl >/dev/null 2>&1 || die "curl is required"
 command -v jq >/dev/null 2>&1 || die "jq is required"
