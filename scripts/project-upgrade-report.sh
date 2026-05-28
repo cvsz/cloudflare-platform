@@ -23,17 +23,18 @@ log(){ printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 has(){ command -v "$1" >/dev/null 2>&1; }
 
 run_check(){
-  local name="$1"; shift
+  local name="$1"
+  shift
   local output rc
   log "running: $name"
   set +e
-  output="$($@ 2>&1)"
+  output="$("$@" 2>&1)"
   rc=$?
   set -e
   {
-    printf '\n### %s\n\n' "$name"
-    printf '**Status:** `%s`\n\n' "$rc"
-    printf '```text\n%s\n```\n' "$output"
+    printf "\n### %s\n\n" "$name"
+    printf "**Status:** \`%s\`\n\n" "$rc"
+    printf "\`\`\`text\n%s\n\`\`\`\n" "$output"
   } >> "$REPORT_FILE"
   return 0
 }
@@ -58,21 +59,21 @@ HEADER
 
 for tool in git bash python3 pytest terraform tofu cloudflared curl jq shellcheck; do
   if has "$tool"; then
-    printf '| `%s` | available |\n' "$tool" >> "$REPORT_FILE"
+    printf "| \`%s\` | available |\n" "$tool" >> "$REPORT_FILE"
   else
-    printf '| `%s` | missing |\n' "$tool" >> "$REPORT_FILE"
+    printf "| \`%s\` | missing |\n" "$tool" >> "$REPORT_FILE"
   fi
 done
 
 {
-  printf '\n## Git state\n\n'
-  printf '```text\n'
+  printf "\n## Git state\n\n"
+  printf "\`\`\`text\n"
   git status --short 2>&1 || true
-  printf '\nHEAD: '
+  printf "\nHEAD: "
   git rev-parse --short HEAD 2>/dev/null || true
-  printf '\nBranch: '
+  printf "\nBranch: "
   git branch --show-current 2>/dev/null || true
-  printf '\n```\n'
+  printf "\n\`\`\`\n"
 } >> "$REPORT_FILE"
 
 run_check "Python env validator" python3 python/cfstack_validate_env.py --json
@@ -100,15 +101,20 @@ else
 fi
 
 if has tofu && [[ -d opentofu/environments/${ENVIRONMENT:-dev} ]]; then
-  run_check "OpenTofu validate" tofu -chdir="opentofu/environments/${ENVIRONMENT:-dev}" validate
+  tofu_path="$(command -v tofu)"
+  if [[ "$tofu_path" == "/usr/bin/tofu" ]]; then
+    run_check "OpenTofu" bash -lc 'echo "system /usr/bin/tofu appears to be a desktop UFO tool, not OpenTofu; install official opentofu binary or set TOFU_BIN"; exit 0'
+  else
+    run_check "OpenTofu validate" "$tofu_path" -chdir="opentofu/environments/${ENVIRONMENT:-dev}" validate
+  fi
 else
   run_check "OpenTofu" bash -lc 'echo "tofu missing or env root missing; skipped"; exit 0'
 fi
 
-if [[ -x scripts/cloudflare/fetch-cloudflare-llms-context.sh ]]; then
+if [[ -f scripts/cloudflare/fetch-cloudflare-llms-context.sh ]]; then
   run_check "Cloudflare docs cache fetch" bash scripts/cloudflare/fetch-cloudflare-llms-context.sh
 else
-  run_check "Cloudflare docs cache fetch" bash -lc 'echo "fetch script missing or not executable; run chmod +x scripts/cloudflare/fetch-cloudflare-llms-context.sh"; exit 0'
+  run_check "Cloudflare docs cache fetch" bash -lc 'echo "fetch script missing; skipped"; exit 0'
 fi
 
 cat >> "$REPORT_FILE" <<'FOOTER'
