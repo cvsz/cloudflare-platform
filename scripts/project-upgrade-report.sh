@@ -49,7 +49,7 @@ Repository root: $ROOT
 
 This report runs CI-safe local checks for source health, tests, YAML syntax, shell syntax, Terraform formatting/validation, OpenTofu validation, Cloudflare docs context cache readiness, and repository hygiene.
 
-Deployment secrets are treated as advisory here so the report can stay useful on fresh clones and CI. Use `make validate-env` for strict deployment validation.
+Deployment secrets are treated as advisory here so the report can stay useful on fresh clones and CI. Use `make validate-env-strict` for strict deployment validation.
 
 ## Tool inventory
 
@@ -124,6 +124,7 @@ cat >> "$REPORT_FILE" <<'FOOTER'
 - [ ] Review `.env.example` against actual deployment values.
 - [ ] Keep `COST_LOCK=true` for Free/no-cost operation.
 - [ ] Run `make validate` after installing local dependencies.
+- [ ] Run `make validate-env-strict` after real deployment values are filled.
 - [ ] Review Terraform plan output before any apply.
 - [ ] Run token lifecycle only in dry-run first.
 - [ ] Confirm Cloudflare docs cache is refreshed before docs/API-related agent work.
