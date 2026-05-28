@@ -175,7 +175,7 @@ drift-detect: tf-init
 	esac
 
 token-clean:
-	@bash scripts/cloudflare/run-token-rotation.sh --dry-run --keep-most 1 --unused-days 90
+	@bash scripts/cloudflare/run-token-rotation.sh --dry-run --keep-most 1 --unused-days 90 || { echo "WARN: token-clean skipped; run make token-verify after configuring CLOUDFLARE_BOOTSTRAP_TOKEN"; true; }
 
 token-verify:
 	@bash scripts/cloudflare/verify-token-env.sh
