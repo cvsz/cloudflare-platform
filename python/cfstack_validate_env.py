@@ -10,15 +10,15 @@ from typing import Dict, List
 from urllib.parse import urlparse
 
 REQUIRED_VARS = [
-    "CF_ACCOUNT_ID",
-    "CF_ZONE_ID",
+    "CLOUDFLARE_ACCOUNT_ID",
+    "CLOUDFLARE_ZONE_ID",
     "CLOUDFLARE_API_TOKEN",
-    "CF_DNS_TOKEN",
-    "CF_WORKERS_TOKEN",
-    "CF_ZT_TOKEN",
-    "CF_WAF_TOKEN",
-    "CF_TUNNEL_TOKEN",
-    "CF_R2_TOKEN",
+    "CLOUDFLARE_DNS_TOKEN",
+    "CLOUDFLARE_WORKERS_TOKEN",
+    "CLOUDFLARE_ZT_TOKEN",
+    "CLOUDFLARE_WAF_TOKEN",
+    "CLOUDFLARE_TUNNEL_TOKEN",
+    "CLOUDFLARE_R2_TOKEN",
     "IDENTITY_PROVIDER_TYPE",
     "IDENTITY_PROVIDER_VENDOR",
     "IDENTITY_PROVIDER_METADATA_URL",
@@ -35,24 +35,28 @@ REQUIRED_VARS = [
 S3_BACKEND_REQUIRED_VARS = ["TERRAFORM_STATE_BUCKET", "TERRAFORM_LOCK_TABLE"]
 TOKEN_VARS = [
     "CLOUDFLARE_API_TOKEN",
-    "CF_DNS_TOKEN",
-    "CF_WORKERS_TOKEN",
-    "CF_ZT_TOKEN",
-    "CF_WAF_TOKEN",
-    "CF_TUNNEL_TOKEN",
-    "CF_R2_TOKEN",
-    "CF_AUDIT_TOKEN",
-    "CF_AI_GATEWAY_TOKEN",
+    "CLOUDFLARE_DNS_TOKEN",
+    "CLOUDFLARE_WORKERS_TOKEN",
+    "CLOUDFLARE_ZT_TOKEN",
+    "CLOUDFLARE_WAF_TOKEN",
+    "CLOUDFLARE_TUNNEL_TOKEN",
+    "CLOUDFLARE_R2_TOKEN",
+    "CLOUDFLARE_AUDIT_TOKEN",
+    "CLOUDFLARE_AI_GATEWAY_TOKEN",
 ]
 ALIASES = {
-    "CF_ACCOUNT_ID": ["CLOUDFLARE_ACCOUNT_ID"],
-    "CF_ZONE_ID": ["CLOUDFLARE_ZONE_ID"],
-    "CF_DNS_TOKEN": ["CLOUDFLARE_DNS_TOKEN"],
-    "CF_WORKERS_TOKEN": ["CLOUDFLARE_WORKERS_TOKEN"],
-    "CF_ZT_TOKEN": ["CLOUDFLARE_ZT_TOKEN"],
-    "CF_WAF_TOKEN": ["CLOUDFLARE_WAF_TOKEN"],
-    "CF_TUNNEL_TOKEN": ["CLOUDFLARE_TUNNEL_TOKEN"],
-    "CF_R2_TOKEN": ["CLOUDFLARE_R2_TOKEN"],
+    "CLOUDFLARE_ACCOUNT_ID": ["CF_ACCOUNT_ID"],
+    "CLOUDFLARE_ZONE_ID": ["CF_ZONE_ID"],
+    "CLOUDFLARE_BOOTSTRAP_TOKEN": ["CF_BOOTSTRAP_TOKEN"],
+    "CLOUDFLARE_DNS_TOKEN": ["CF_DNS_TOKEN"],
+    "CLOUDFLARE_WORKERS_TOKEN": ["CF_WORKERS_TOKEN"],
+    "CLOUDFLARE_ZT_TOKEN": ["CF_ZT_TOKEN"],
+    "CLOUDFLARE_WAF_TOKEN": ["CF_WAF_TOKEN"],
+    "CLOUDFLARE_TUNNEL_TOKEN": ["CF_TUNNEL_TOKEN"],
+    "CLOUDFLARE_R2_TOKEN": ["CF_R2_TOKEN"],
+    "CLOUDFLARE_AUDIT_TOKEN": ["CF_AUDIT_TOKEN"],
+    "CLOUDFLARE_AI_GATEWAY_TOKEN": ["CF_AI_GATEWAY_TOKEN"],
+    "CLOUDFLARE_AI_GATEWAY_SLUG": ["CF_AI_GATEWAY_SLUG"],
 }
 HEX_ID_RE = re.compile(r"^[a-f0-9]{32}$", re.IGNORECASE)
 HOSTNAME_RE = re.compile(r"^(?=.{1,253}$)(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))*$")
@@ -142,7 +146,7 @@ def validate_with_warnings(env: Dict[str, str]) -> ValidationResult:
             if not env.get(name, "").strip():
                 errors.append(f"{name}: missing for s3 backend")
 
-    for id_key in ("CF_ACCOUNT_ID", "CF_ZONE_ID"):
+    for id_key in ("CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_ZONE_ID"):
         value = env.get(id_key, "").strip()
         if value and not HEX_ID_RE.fullmatch(value):
             errors.append(f"{id_key}: must be a 32-character hexadecimal string")
