@@ -21,7 +21,6 @@ BACKUP_DIR="${BACKUP_DIR:-$ROOT/.cloudflare-backups}"
 mkdir -p "$BACKUP_DIR"
 
 log(){ printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
-warn(){ log "WARN: $*" >&2; }
 die(){ log "ERROR: $*" >&2; exit 1; }
 
 [[ -f "$EXAMPLE_FILE" ]] || die "missing $EXAMPLE_FILE"
@@ -77,12 +76,10 @@ mv "$tmp" "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 log "wrote $ENV_FILE with Free/no-cost defaults"
 
-if command -v python3 >/dev/null 2>&1 && [[ -f python/cfstack_validate_env.py ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$ENV_FILE"
-  set +a
-  if ! python3 python/cfstack_validate_env.py; then
-    warn "strict deployment validation is incomplete; fill real Cloudflare tokens/IDs and run make validate-env-strict"
-  fi
-fi
+cat <<'NEXT'
+
+Next:
+  1. Fill real Cloudflare IDs/tokens in .env when ready.
+  2. Run: make validate-env
+  3. Run strict deployment validation only after real values are filled: make validate-env-strict
+NEXT
