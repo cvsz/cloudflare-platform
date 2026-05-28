@@ -45,6 +45,42 @@ load_env_file(){
   set +a
 }
 
+curl_verify_token(){
+  local body_file err_file http_code curl_rc body err
+  body_file="$(mktemp)"
+  err_file="$(mktemp)"
+  trap 'rm -f "$body_file" "$err_file"' RETURN
+
+  set +e
+  http_code="$(curl -sS -o "$body_file" -w '%{http_code}' \
+    -H "Authorization: Bearer ${CLOUDFLARE_BOOTSTRAP_TOKEN}" \
+    "${API_BASE}/user/tokens/verify" 2>"$err_file")"
+  curl_rc=$?
+  set -e
+
+  body="$(cat "$body_file")"
+  err="$(cat "$err_file")"
+
+  if [[ "$curl_rc" -ne 0 ]]; then
+    die "curl failed while verifying token: rc=${curl_rc} http=${http_code:-000} stderr=${err:-<empty>}"
+  fi
+
+  if [[ -z "$body" ]]; then
+    die "Cloudflare token verify returned an empty body: http=${http_code:-000}. Check DNS, TLS, proxy, firewall, and API_BASE=${API_BASE}."
+  fi
+
+  if [[ ! "$http_code" =~ ^2[0-9][0-9]$ ]]; then
+    if printf '%s' "$body" | jq -e . >/dev/null 2>&1; then
+      printf '%s\n' "$body" | jq -c '{success:(.success // false), errors:(.errors // []), messages:(.messages // [])}'
+    else
+      printf '%s\n' "$body"
+    fi
+    die "Cloudflare token verify failed with HTTP ${http_code}."
+  fi
+
+  printf '%s' "$body"
+}
+
 load_env_file .env
 load_env_file .env.cloudflare
 
@@ -67,12 +103,10 @@ printf 'CLOUDFLARE_BOOTSTRAP_TOKEN: %s\n' "$(mask "$CLOUDFLARE_BOOTSTRAP_TOKEN")
 command -v curl >/dev/null 2>&1 || die "curl is required"
 command -v jq >/dev/null 2>&1 || die "jq is required"
 
-response="$(curl -fsS -H "Authorization: Bearer ${CLOUDFLARE_BOOTSTRAP_TOKEN}" "${API_BASE}/user/tokens/verify" 2>/dev/null || true)"
-[[ -n "$response" ]] || die "empty response from Cloudflare token verify endpoint"
-
+response="$(curl_verify_token)"
 success="$(printf '%s' "$response" | jq -r '.success // false' 2>/dev/null || printf 'false')"
 if [[ "$success" != "true" ]]; then
-  printf '%s\n' "$response" | jq -c '{success:(.success // false), errors:(.errors // [])}'
+  printf '%s\n' "$response" | jq -c '{success:(.success // false), errors:(.errors // []), messages:(.messages // [])}'
   die "CLOUDFLARE_BOOTSTRAP_TOKEN is invalid, expired, revoked, malformed, or overridden by .env.cloudflare"
 fi
 
