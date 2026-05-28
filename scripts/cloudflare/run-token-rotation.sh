@@ -59,52 +59,70 @@ is_cleanup_only(){
   ! contains_arg --regenerate "$@"
 }
 
-verify_bootstrap_token(){
-  command -v curl >/dev/null 2>&1 || die "curl is required"
-  command -v jq >/dev/null 2>&1 || die "jq is required"
-
-  local body_file err_file http_code curl_rc body err ok errors
+request_verify(){
+  local label="$1" endpoint="$2" body_file err_file http_code curl_rc body err ok errors
   body_file="$(mktemp)"
   err_file="$(mktemp)"
-  trap 'rm -f "$body_file" "$err_file"' RETURN
 
   set +e
   http_code="$(curl -sS -o "$body_file" -w '%{http_code}' \
     -H "Authorization: Bearer ${CLOUDFLARE_BOOTSTRAP_TOKEN}" \
-    "${API_BASE}/user/tokens/verify" 2>"$err_file")"
+    "${API_BASE}${endpoint}" 2>"$err_file")"
   curl_rc=$?
   set -e
 
   body="$(cat "$body_file")"
   err="$(cat "$err_file")"
+  rm -f "$body_file" "$err_file"
 
   if [[ "$curl_rc" -ne 0 ]]; then
-    warn "curl failed while verifying token: rc=${curl_rc} http=${http_code:-000} stderr=${err:-<empty>}"
-    return 2
+    warn "$label verify curl failed: rc=${curl_rc} http=${http_code:-000} stderr=${err:-<empty>}"
+    return 20
   fi
+
   if [[ -z "$body" ]]; then
-    warn "Cloudflare token verify returned an empty body: http=${http_code:-000}; API_BASE=${API_BASE}"
-    return 2
+    warn "$label verify returned an empty body: http=${http_code:-000}; endpoint=${endpoint}"
+    return 21
   fi
+
   if [[ ! "$http_code" =~ ^2[0-9][0-9]$ ]]; then
     if printf '%s' "$body" | jq -e . >/dev/null 2>&1; then
       errors="$(printf '%s' "$body" | jq -c '.errors // []')"
     else
       errors="$body"
     fi
-    warn "Cloudflare token verify failed: http=${http_code} errors=${errors}"
-    return 1
+    warn "$label verify failed: http=${http_code} errors=${errors}"
+    return 22
   fi
 
   ok="$(printf '%s' "$body" | jq -r '.success // false' 2>/dev/null || printf 'false')"
   if [[ "$ok" != "true" ]]; then
     errors="$(printf '%s' "$body" | jq -c '.errors // []' 2>/dev/null || printf '[]')"
-    warn "CLOUDFLARE_BOOTSTRAP_TOKEN failed /user/tokens/verify: ${errors}"
-    return 1
+    warn "$label verify success=false errors=${errors}"
+    return 23
   fi
 
-  log "verified CLOUDFLARE_BOOTSTRAP_TOKEN"
+  log "verified CLOUDFLARE_BOOTSTRAP_TOKEN as $label"
   return 0
+}
+
+verify_bootstrap_token(){
+  command -v curl >/dev/null 2>&1 || die "curl is required"
+  command -v jq >/dev/null 2>&1 || die "jq is required"
+
+  if [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+    if request_verify "account-token" "/accounts/${CLOUDFLARE_ACCOUNT_ID}/tokens/verify"; then
+      return 0
+    fi
+  else
+    warn "CLOUDFLARE_ACCOUNT_ID is missing; skipping account-token verify endpoint"
+  fi
+
+  if request_verify "user-token" "/user/tokens/verify"; then
+    return 0
+  fi
+
+  return 1
 }
 
 # Load .env first, then .env.cloudflare so generated token files can override intentionally.
@@ -136,8 +154,8 @@ fi
 if contains_arg --regenerate "$@"; then
   types="$(value_after_arg --types "$@" || true)"
   [[ -n "$types" ]] || die "--regenerate requires --types"
-  if [[ "$types" == "all" || ",$types," == *",dns,"* ]]; then
-    [[ -n "${CLOUDFLARE_ZONE_ID:-}" ]] || die "CLOUDFLARE_ZONE_ID is missing. DNS token creation needs the real Cloudflare zone ID."
+  if [[ "$types" == "all" || ",$types," == *",dns,"* || ",$types," == *",waf,"* ]]; then
+    [[ -n "${CLOUDFLARE_ZONE_ID:-}" ]] || die "CLOUDFLARE_ZONE_ID is missing. DNS/WAF token creation needs the real Cloudflare zone ID."
   fi
 fi
 
