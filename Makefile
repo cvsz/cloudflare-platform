@@ -10,6 +10,7 @@ PYTHON ?= python3
 VENV_DIR ?= .venv
 CONFIRM_APPLY ?= no
 TF_PLAN_FILE ?= tfplan
+TF_ARGS ?=
 
 TF_ROOT := terraform
 TF_ENV_DIR := terraform/environments/$(ENVIRONMENT)
@@ -99,7 +100,7 @@ fmt: tf-fmt
 fmt-check: tf-fmt-check
 
 tf-init:
-	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) init
+	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) init $(TF_ARGS)
 
 tf-fmt:
 	@$(TF_BIN) fmt -recursive $(TF_ROOT) opentofu 2>/dev/null || $(TF_BIN) fmt -recursive $(TF_ROOT)
@@ -111,15 +112,15 @@ tf-validate: tf-init
 	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) validate
 
 tf-plan: tf-init
-	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) plan
+	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) plan $(TF_ARGS)
 
 tf-plan-out: tf-init
-	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) plan -out=$(TF_PLAN_FILE)
+	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) plan -out=$(TF_PLAN_FILE) $(TF_ARGS)
 	@echo "Saved Terraform plan: $(TF_ROOT)/$(TF_PLAN_FILE)"
 
 tf-apply: tf-init
 	@test "$(CONFIRM_APPLY)" = "yes" || (echo "ERROR: Set CONFIRM_APPLY=yes to continue." && exit 1)
-	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) apply
+	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) apply -auto-approve $(TF_ARGS)
 
 tf-apply-plan:
 	@test "$(CONFIRM_APPLY)" = "yes" || (echo "ERROR: Set CONFIRM_APPLY=yes to continue." && exit 1)
@@ -128,7 +129,7 @@ tf-apply-plan:
 
 tf-destroy: tf-init
 	@test "$(CONFIRM_APPLY)" = "yes" || (echo "ERROR: Set CONFIRM_APPLY=yes to continue." && exit 1)
-	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) destroy
+	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) destroy -auto-approve $(TF_ARGS)
 
 tf-state-rm-waf: tf-init
 	@test "$(CONFIRM_APPLY)" = "yes" || (echo "ERROR: Set CONFIRM_APPLY=yes to remove WAF resources from Terraform state only." && exit 1)
@@ -144,30 +145,30 @@ tf-state-rm-waf: tf-init
 
 tf-env-init:
 	@test -d "$(TF_ENV_DIR)" || (echo "ERROR: missing $(TF_ENV_DIR)" && exit 1)
-	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ENV_DIR) init
+	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ENV_DIR) init $(TF_ARGS)
 
 tf-env-validate: tf-env-init
 	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ENV_DIR) validate
 
 tf-env-plan: tf-env-init
-	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ENV_DIR) plan
+	@bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ENV_DIR) plan $(TF_ARGS)
 
 tofu-init:
-	@if command -v $(TOFU_BIN) >/dev/null 2>&1 && [ -d "$(TOFU_ENV_DIR)" ]; then $(TOFU_BIN) -chdir=$(TOFU_ENV_DIR) init; else echo "WARN: tofu or $(TOFU_ENV_DIR) missing; skipped"; fi
+	@if command -v $(TOFU_BIN) >/dev/null 2>&1 && [ -d "$(TOFU_ENV_DIR)" ]; then $(TOFU_BIN) -chdir=$(TOFU_ENV_DIR) init $(TF_ARGS); else echo "WARN: tofu or $(TOFU_ENV_DIR) missing; skipped"; fi
 
 tofu-validate: tofu-init
 	@if command -v $(TOFU_BIN) >/dev/null 2>&1 && [ -d "$(TOFU_ENV_DIR)" ]; then $(TOFU_BIN) -chdir=$(TOFU_ENV_DIR) validate; else echo "WARN: tofu or $(TOFU_ENV_DIR) missing; skipped"; fi
 
 tofu-plan: tofu-init
-	@if command -v $(TOFU_BIN) >/dev/null 2>&1 && [ -d "$(TOFU_ENV_DIR)" ]; then $(TOFU_BIN) -chdir=$(TOFU_ENV_DIR) plan; else echo "WARN: tofu or $(TOFU_ENV_DIR) missing; skipped"; fi
+	@if command -v $(TOFU_BIN) >/dev/null 2>&1 && [ -d "$(TOFU_ENV_DIR)" ]; then $(TOFU_BIN) -chdir=$(TOFU_ENV_DIR) plan $(TF_ARGS); else echo "WARN: tofu or $(TOFU_ENV_DIR) missing; skipped"; fi
 
 drift: drift-detect
 
 drift-detect: tf-init
-	@set +e; bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) plan -detailed-exitcode -out=tfplan.drift; rc=$$?; set -e; \
+	@set +e; bash $(TF_ENV_WRAPPER) $(TF_BIN) -chdir=$(TF_ROOT) plan -detailed-exitcode -out=tfplan.drift $(TF_ARGS); rc=$$?; set -e; \
 	case "$$rc" in \
 	  0) echo "No drift detected." ;; \
-	  2) echo "WARN: drift detected."; exit 2 ;; \
+	  2) echo "WARN: drift detected. Saved plan: $(TF_ROOT)/tfplan.drift"; exit 2 ;; \
 	  *) echo "ERROR: drift check failed rc=$$rc"; exit "$$rc" ;; \
 	esac
 
