@@ -5,26 +5,60 @@ IFS=$'\n\t'
 file="${1:-.env.cloudflare}"
 [[ -f "$file" ]] || exit 0
 
-optional_keys=(
-  CLOUDFLARE_AUDIT_TOKEN
-  CLOUDFLARE_AI_GATEWAY_TOKEN
-)
-
 tmp="$(mktemp "${file}.clean.XXXXXX")"
 chmod 600 "$tmp"
 
-while IFS= read -r line || [[ -n "$line" ]]; do
-  skip=false
-  for key in "${optional_keys[@]}"; do
-    case "$line" in
-      "${key}="|"${key}=\"\""|"${key}=\'\'")
-        skip=true
-        ;;
-    esac
-    $skip && break
-  done
-  $skip || printf '%s\n' "$line" >> "$tmp"
-done < "$file"
+python3 - "$file" > "$tmp" <<'PY'
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+assign_re = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=(.*)$")
+
+output: list[str | None] = []
+key_to_index: dict[str, int] = {}
+optional_empty_drop = {
+    "CLOUDFLARE_AUDIT_TOKEN",
+    "CLOUDFLARE_AI_GATEWAY_TOKEN",
+}
+
+def normalize_value(raw: str) -> str:
+    value = raw.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+        value = value[1:-1]
+    return value
+
+for line in lines:
+    match = assign_re.match(line)
+    if not match:
+        output.append(line)
+        continue
+
+    key, raw_value = match.group(1), match.group(2)
+    value = normalize_value(raw_value)
+
+    if key in optional_empty_drop and value == "":
+        if key in key_to_index:
+            output[key_to_index[key]] = None
+            key_to_index.pop(key, None)
+        continue
+
+    normalized = f"{key}={value}"
+
+    if key in key_to_index:
+        output[key_to_index[key]] = normalized
+    else:
+        key_to_index[key] = len(output)
+        output.append(normalized)
+
+for line in output:
+    if line is not None:
+        print(line)
+PY
 
 mv "$tmp" "$file"
 chmod 600 "$file"
