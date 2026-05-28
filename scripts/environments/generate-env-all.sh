@@ -21,7 +21,6 @@ PRIMARY_DOMAIN_DEFAULT="${PRIMARY_DOMAIN_DEFAULT:-zeaz.dev}"
 mkdir -p "$BACKUP_DIR"
 
 log(){ printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
-warn(){ log "WARN: $*" >&2; }
 die(){ log "ERROR: $*" >&2; exit 1; }
 
 random_hex(){
@@ -39,6 +38,17 @@ read_existing(){
   awk -F= -v k="$key" '$1 == k {v=$0; sub(/^[^=]*=/, "", v); gsub(/^"|"$/, "", v); print v}' "$ENV_FILE" | tail -n 1
 }
 
+read_existing_any(){
+  local key
+  for key in "$@"; do
+    value="$(read_existing "$key")"
+    if [[ -n "$value" ]]; then
+      printf '%s' "$value"
+      return 0
+    fi
+  done
+}
+
 keep_or_default(){
   local key="$1" default="$2" existing
   existing="$(read_existing "$key")"
@@ -49,15 +59,20 @@ keep_or_default(){
   fi
 }
 
+keep_alias_or_blank(){
+  local canonical="$1" legacy="$2" value
+  value="$(read_existing_any "$canonical" "$legacy")"
+  printf '%s' "$value"
+}
+
 write_kv(){
   local key="$1" value="$2"
   printf '%s=%s\n' "$key" "$value" >> "$TMP_ENV"
 }
 
 write_preserved_or_blank(){
-  local key="$1" value
-  value="$(read_existing "$key")"
-  write_kv "$key" "$value"
+  local canonical="$1" legacy="$2"
+  write_kv "$canonical" "$(keep_alias_or_blank "$canonical" "$legacy")"
 }
 
 if [[ -f "$ENV_FILE" ]]; then
@@ -96,29 +111,29 @@ write_kv "TERRAFORM_BACKEND_TYPE" "local"
 write_kv "TERRAFORM_STATE_BUCKET" ""
 write_kv "TERRAFORM_LOCK_TABLE" ""
 write_kv "SECRET_ROTATION_INTERVAL" "$(keep_or_default SECRET_ROTATION_INTERVAL 30d)"
-write_kv "CF_AI_GATEWAY_SLUG" "$(keep_or_default CF_AI_GATEWAY_SLUG zeaz)"
+write_kv "CLOUDFLARE_AI_GATEWAY_SLUG" "$(keep_alias_or_blank CLOUDFLARE_AI_GATEWAY_SLUG CF_AI_GATEWAY_SLUG)"
 
 cat >> "$TMP_ENV" <<'SECTION'
 
 # Cloudflare account / zone IDs. Fill real values from Cloudflare Dashboard.
 SECTION
-write_preserved_or_blank "CF_ACCOUNT_ID"
-write_preserved_or_blank "CF_ZONE_ID"
+write_preserved_or_blank "CLOUDFLARE_ACCOUNT_ID" "CF_ACCOUNT_ID"
+write_preserved_or_blank "CLOUDFLARE_ZONE_ID" "CF_ZONE_ID"
 
 cat >> "$TMP_ENV" <<'SECTION'
 
 # Cloudflare tokens. Fill real scoped API tokens. Do not use Global API Key.
 SECTION
-write_preserved_or_blank "CF_BOOTSTRAP_TOKEN"
-write_preserved_or_blank "CLOUDFLARE_API_TOKEN"
-write_preserved_or_blank "CF_DNS_TOKEN"
-write_preserved_or_blank "CF_WORKERS_TOKEN"
-write_preserved_or_blank "CF_ZT_TOKEN"
-write_preserved_or_blank "CF_WAF_TOKEN"
-write_preserved_or_blank "CF_TUNNEL_TOKEN"
-write_preserved_or_blank "CF_R2_TOKEN"
-write_preserved_or_blank "CF_AUDIT_TOKEN"
-write_preserved_or_blank "CF_AI_GATEWAY_TOKEN"
+write_preserved_or_blank "CLOUDFLARE_BOOTSTRAP_TOKEN" "CF_BOOTSTRAP_TOKEN"
+write_preserved_or_blank "CLOUDFLARE_API_TOKEN" "CLOUDFLARE_API_TOKEN"
+write_preserved_or_blank "CLOUDFLARE_DNS_TOKEN" "CF_DNS_TOKEN"
+write_preserved_or_blank "CLOUDFLARE_WORKERS_TOKEN" "CF_WORKERS_TOKEN"
+write_preserved_or_blank "CLOUDFLARE_ZT_TOKEN" "CF_ZT_TOKEN"
+write_preserved_or_blank "CLOUDFLARE_WAF_TOKEN" "CF_WAF_TOKEN"
+write_preserved_or_blank "CLOUDFLARE_TUNNEL_TOKEN" "CF_TUNNEL_TOKEN"
+write_preserved_or_blank "CLOUDFLARE_R2_TOKEN" "CF_R2_TOKEN"
+write_preserved_or_blank "CLOUDFLARE_AUDIT_TOKEN" "CF_AUDIT_TOKEN"
+write_preserved_or_blank "CLOUDFLARE_AI_GATEWAY_TOKEN" "CF_AI_GATEWAY_TOKEN"
 
 cat >> "$TMP_ENV" <<'SECTION'
 
@@ -156,15 +171,15 @@ cat <<'NEXT'
 
 Next:
   1. Fill real Cloudflare IDs and scoped tokens in .env:
-       CF_ACCOUNT_ID
-       CF_ZONE_ID
+       CLOUDFLARE_ACCOUNT_ID
+       CLOUDFLARE_ZONE_ID
        CLOUDFLARE_API_TOKEN
-       CF_DNS_TOKEN
-       CF_WORKERS_TOKEN
-       CF_ZT_TOKEN
-       CF_WAF_TOKEN
-       CF_TUNNEL_TOKEN
-       CF_R2_TOKEN
+       CLOUDFLARE_DNS_TOKEN
+       CLOUDFLARE_WORKERS_TOKEN
+       CLOUDFLARE_ZT_TOKEN
+       CLOUDFLARE_WAF_TOKEN
+       CLOUDFLARE_TUNNEL_TOKEN
+       CLOUDFLARE_R2_TOKEN
   2. Run source-health validation:
        make validate-env
   3. Run strict deployment validation after real values are filled:
