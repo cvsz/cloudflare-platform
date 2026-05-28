@@ -28,7 +28,7 @@ die(){ log "ERROR: $*" >&2; exit 1; }
 read_value(){
   local file="$1" key="$2"
   [[ -f "$file" ]] || return 0
-  awk -F= -v k="$key" '$1 == k {v=$0; sub(/^[^=]*=/, "", v); print v}' "$file" | tail -n 1
+  awk -F= -v k="$key" '$1 == k {v=$0; sub(/^[^=]*=/, "", v); gsub(/^"|"$/, "", v); print v}' "$file" | tail -n 1
 }
 
 if [[ -f "$ENV_FILE" ]]; then
@@ -39,6 +39,7 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 tmp="$(mktemp "$ENV_FILE.free.XXXXXX")"
+chmod 600 "$tmp"
 while IFS= read -r line || [[ -n "$line" ]]; do
   if [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
     key="${line%%=*}"
@@ -72,6 +73,7 @@ ALLOW_LOGPUSH=false
 TERRAFORM_BACKEND_TYPE=local
 ENV
 
+bash scripts/cloudflare/clean-env-empty-values.sh "$tmp"
 mv "$tmp" "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 log "wrote $ENV_FILE with Free/no-cost defaults"
