@@ -1,108 +1,105 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+IFS=$'\n\t'
 
-echo "🚀 Refactoring Terraform variables → cloudflare_*"
-
-ROOT="terraform"
-
-# -----------------------------------------------------------------------------
-# Backup
-# -----------------------------------------------------------------------------
-BACKUP_DIR=".backup-refactor-$(date -u +%Y%m%dT%H%M%SZ)"
-mkdir -p "$BACKUP_DIR"
-
-echo "📦 Creating backup in $BACKUP_DIR"
-cp -r "$ROOT" "$BACKUP_DIR/"
-
-# -----------------------------------------------------------------------------
-# Find all .tf files
-# -----------------------------------------------------------------------------
-mapfile -t FILES < <(find "$ROOT" -type f -name "*.tf")
-
-echo "🔍 Found ${#FILES[@]} Terraform files"
-
-# -----------------------------------------------------------------------------
-# Replace variables safely
-# -----------------------------------------------------------------------------
-for f in "${FILES[@]}"; do
-  echo "✏️  Processing $f"
-
-  sed -i \
-    -e 's/var\.cf_account_id/var.cloudflare_account_id/g' \
-    -e 's/var\.cf_zone_id/var.cloudflare_zone_id/g' \
-    -e 's/var\.cf_api_token/var.cloudflare_bootstrap_token/g' \
-    -e 's/var\.cf_api_key/var.cloudflare_bootstrap_token/g' \
-    "$f"
-
-  # Fix provider blocks
-  sed -i \
-    -e 's/api_token *= *var\.cf_api_token/api_token = var.cloudflare_bootstrap_token/g' \
-    "$f"
-done
-
-# -----------------------------------------------------------------------------
-# Fix variable declarations (root modules)
-# -----------------------------------------------------------------------------
-echo "🔧 Fixing variable blocks..."
-
-find "$ROOT" -type f -name "variables.tf" | while read -r file; do
-  echo "🧩 Updating $file"
-
-  sed -i \
-    -e 's/variable "cf_account_id"/variable "cloudflare_account_id"/g' \
-    -e 's/variable "cf_zone_id"/variable "cloudflare_zone_id"/g' \
-    -e 's/variable "cf_api_token"/variable "cloudflare_bootstrap_token"/g' \
-    "$file"
-
-  # Ensure bootstrap token is sensitive
-  if grep -q 'variable "cloudflare_bootstrap_token"' "$file"; then
-    if ! grep -q 'sensitive *= *true' "$file"; then
-      sed -i '/variable "cloudflare_bootstrap_token"/,/}/ s/}/  sensitive = true\n}/' "$file"
+ROOT="${PROJECT_ROOT:-}"
+if [[ -z "$ROOT" ]]; then
+  ROOT="$PWD"
+  while [[ "$ROOT" != "/" ]]; do
+    if [[ -d "$ROOT/.git" || -f "$ROOT/Makefile" || -f "$ROOT/.env.example" ]]; then
+      break
     fi
-  fi
+    ROOT="$(dirname "$ROOT")"
+  done
+fi
+[[ "$ROOT" != "/" ]] || ROOT="$PWD"
+cd "$ROOT"
+
+DRY_RUN=false
+APPLY=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run) DRY_RUN=true; shift ;;
+    --apply) APPLY=true; shift ;;
+    --help|-h)
+      cat <<'USAGE'
+Usage: bash scripts/refactor-cloudflare-vars.sh --dry-run|--apply
+
+Migrates legacy Cloudflare environment variable names from CF_* to CLOUDFLARE_*
+in active tracked text files. Ignored/generated backup folders are skipped.
+
+Examples:
+  bash scripts/refactor-cloudflare-vars.sh --dry-run
+  bash scripts/refactor-cloudflare-vars.sh --apply
+USAGE
+      exit 0
+      ;;
+    *) echo "ERROR: unknown option: $1" >&2; exit 1 ;;
+  esac
 done
 
-# -----------------------------------------------------------------------------
-# Ensure provider exists in each environment
-# -----------------------------------------------------------------------------
-for env in dev staging prod; do
-  FILE="terraform/environments/$env/versions.tf"
-
-  if [[ -f "$FILE" ]]; then
-    if ! grep -q "api_token" "$FILE"; then
-      echo "🔧 Injecting provider into $FILE"
-      cat >> "$FILE" <<'TF'
-
-provider "cloudflare" {
-  api_token = var.cloudflare_bootstrap_token
-}
-TF
-    fi
-  fi
-done
-
-# -----------------------------------------------------------------------------
-# Clean old references (optional warning)
-# -----------------------------------------------------------------------------
-echo "🔎 Checking for leftover old variables..."
-
-if grep -R "cf_" "$ROOT" | grep -v "cloudflare_" ; then
-  echo "⚠️  Some old cf_* references still exist — review manually"
-else
-  echo "✅ No legacy variables found"
+if [[ "$DRY_RUN" != "true" && "$APPLY" != "true" ]]; then
+  echo "ERROR: pass --dry-run or --apply" >&2
+  exit 1
 fi
 
-# -----------------------------------------------------------------------------
-# Done
-# -----------------------------------------------------------------------------
-echo
-echo "✅ Refactor complete!"
-echo
-echo "Next:"
-echo "export TF_VAR_cloudflare_account_id=\$CF_ACCOUNT_ID"
-echo "export TF_VAR_cloudflare_zone_id=\$CF_ZONE_ID"
-echo "export TF_VAR_cloudflare_bootstrap_token=\$CF_BOOTSTRAP_TOKEN"
-echo
-echo "cd terraform/environments/prod"
-echo "terraform init"
-echo "terraform plan"
+mapfile -t files < <(
+  git ls-files \
+    ':!*.png' ':!*.jpg' ':!*.jpeg' ':!*.gif' ':!*.webp' ':!*.ico' ':!*.pdf' ':!*.zip' \
+    ':!.backup/**' ':!.cloudflare-backups/**' ':!.cache/**' ':!reports/**' \
+    2>/dev/null || true
+)
+
+if [[ "${#files[@]}" -eq 0 ]]; then
+  echo "No tracked files found."
+  exit 0
+fi
+
+replacements=(
+  'CF_ACCOUNT_ID:CLOUDFLARE_ACCOUNT_ID'
+  'CF_ZONE_ID:CLOUDFLARE_ZONE_ID'
+  'CF_BOOTSTRAP_TOKEN:CLOUDFLARE_BOOTSTRAP_TOKEN'
+  'CF_DNS_TOKEN:CLOUDFLARE_DNS_TOKEN'
+  'CF_ZT_TOKEN:CLOUDFLARE_ZT_TOKEN'
+  'CF_WORKERS_TOKEN:CLOUDFLARE_WORKERS_TOKEN'
+  'CF_WAF_TOKEN:CLOUDFLARE_WAF_TOKEN'
+  'CF_TUNNEL_TOKEN:CLOUDFLARE_TUNNEL_TOKEN'
+  'CF_R2_TOKEN:CLOUDFLARE_R2_TOKEN'
+  'CF_AUDIT_TOKEN:CLOUDFLARE_AUDIT_TOKEN'
+  'CF_AI_GATEWAY_TOKEN:CLOUDFLARE_AI_GATEWAY_TOKEN'
+  'CF_AI_GATEWAY_SLUG:CLOUDFLARE_AI_GATEWAY_SLUG'
+)
+
+changed=0
+for file in "${files[@]}"; do
+  [[ -f "$file" ]] || continue
+  if ! grep -Iq . "$file"; then
+    continue
+  fi
+
+  original="$(cat "$file")"
+  updated="$original"
+  for pair in "${replacements[@]}"; do
+    old="${pair%%:*}"
+    new="${pair#*:}"
+    updated="${updated//${old}/${new}}"
+  done
+
+  if [[ "$updated" != "$original" ]]; then
+    changed=$((changed + 1))
+    if [[ "$DRY_RUN" == "true" ]]; then
+      echo "WOULD_UPDATE $file"
+    else
+      printf '%s' "$updated" > "$file"
+      echo "UPDATED $file"
+    fi
+  fi
+done
+
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo "Dry run complete. Files needing update: $changed"
+else
+  echo "Migration complete. Files updated: $changed"
+  bash scripts/check-no-cf-vars.sh
+fi
