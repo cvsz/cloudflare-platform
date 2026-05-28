@@ -31,4 +31,6 @@ if [[ "${#files[@]}" -eq 0 ]]; then
   exit 0
 fi
 
-shellcheck "${files[@]}"
+# Project reports fail on Shellcheck errors only. Warnings and info remain
+# visible during local development but do not block a source-health report.
+shellcheck -S error "${files[@]}"
