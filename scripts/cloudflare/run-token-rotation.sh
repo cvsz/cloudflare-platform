@@ -2,33 +2,17 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-ROOT="${PROJECT_ROOT:-}"
-if [[ -z "$ROOT" ]]; then
-  ROOT="$PWD"
-  while [[ "$ROOT" != "/" ]]; do
-    if [[ -d "$ROOT/.git" || -f "$ROOT/.env.example" || -f "$ROOT/Makefile" ]]; then
-      break
-    fi
-    ROOT="$(dirname "$ROOT")"
-  done
-fi
-[[ "$ROOT" != "/" ]] || ROOT="$PWD"
-cd "$ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/cloudflare/lib/env-scope.sh
+source "$SCRIPT_DIR/lib/env-scope.sh"
+cf_load_cloudflare_env_scope
+cd "$PROJECT_ROOT"
 
 API_BASE="${CLOUDFLARE_API_BASE:-https://api.cloudflare.com/client/v4}"
 
-log(){ printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
-warn(){ log "WARN: $*" >&2; }
-die(){ log "ERROR: $*" >&2; exit 1; }
-
-load_env_file(){
-  local file="$1"
-  [[ -f "$file" ]] || return 0
-  set -a
-  # shellcheck disable=SC1090
-  source "$file"
-  set +a
-}
+log(){ cf_env_log "$*"; }
+warn(){ cf_env_warn "$*"; }
+die(){ cf_env_die "$*"; }
 
 contains_arg(){
   local wanted="$1"
@@ -125,15 +109,6 @@ verify_bootstrap_token(){
   return 1
 }
 
-# Load .env first, then .env.cloudflare so generated token files can override intentionally.
-load_env_file .env
-load_env_file .env.cloudflare
-
-: "${CLOUDFLARE_AI_GATEWAY_SLUG:=zeaz}"
-export CLOUDFLARE_AI_GATEWAY_SLUG
-
-# token-clean is a safe dry-run housekeeping target. It should not break local
-# make workflows when deployment token env is not configured yet.
 if is_cleanup_only "$@"; then
   if [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" || -z "${CLOUDFLARE_BOOTSTRAP_TOKEN:-}" ]]; then
     warn "token-clean skipped: CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_BOOTSTRAP_TOKEN is missing"
@@ -146,8 +121,7 @@ if is_cleanup_only "$@"; then
     exit 0
   fi
 else
-  [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] || die "CLOUDFLARE_ACCOUNT_ID is missing. Fill it in .env before token rotation."
-  [[ -n "${CLOUDFLARE_BOOTSTRAP_TOKEN:-}" ]] || die "CLOUDFLARE_BOOTSTRAP_TOKEN is missing. Fill it in .env before token rotation."
+  cf_require_env CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_BOOTSTRAP_TOKEN || exit 1
   verify_bootstrap_token || die "CLOUDFLARE_BOOTSTRAP_TOKEN verification failed. Run make token-verify."
 fi
 
