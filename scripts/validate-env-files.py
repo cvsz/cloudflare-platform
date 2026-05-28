@@ -15,12 +15,22 @@ OPTIONAL_EMPTY_DROP = {
 }
 
 
+def is_secret_key(key: str) -> bool:
+    return bool(SECRET_HINT_RE.search(key))
+
+
 def mask_value(key: str, value: str) -> str:
-    if not SECRET_HINT_RE.search(key):
+    if not is_secret_key(key):
         return value
     if not value:
         return ""
     return "<redacted>"
+
+
+def suggested_assignment(key: str, value: str) -> str:
+    if is_secret_key(key) and value:
+        return f"{key}=<redacted>"
+    return f"{key}={value}"
 
 
 def validate_file(path: Path) -> list[str]:
@@ -43,8 +53,10 @@ def validate_file(path: Path) -> list[str]:
             seen[key] = lineno
 
         if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            unquoted = value[1:-1]
             display = mask_value(key, value)
-            errors.append(f"{path}:{lineno}: quoted env value for {key}: {display}; use {key}={value[1:-1]}")
+            suggestion = suggested_assignment(key, unquoted)
+            errors.append(f"{path}:{lineno}: quoted env value for {key}: {display}; use {suggestion}")
 
         if key in OPTIONAL_EMPTY_DROP and value in {"", '""', "''"}:
             errors.append(f"{path}:{lineno}: optional empty {key} should be omitted")
