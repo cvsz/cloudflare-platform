@@ -14,6 +14,7 @@ ROOT = Path(".")
 SKIP_PARTS = {
     ".git",
     ".backup",
+    ".cache",
     ".cloudflare-backups",
     ".terraform",
     ".venv",
