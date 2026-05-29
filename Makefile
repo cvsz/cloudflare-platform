@@ -344,3 +344,30 @@ zaiz-heal:
 
 zaiz-prod:
 	docker compose -f compose/core.yaml -f compose/edge.yaml -f compose/auth.yaml -f compose/observability.yaml -f compose/runtime.yaml -f compose/governance.yaml -f compose/healing.yaml up -d
+
+zaiz-trader-up:
+	docker compose -f compose/trading.yaml up -d
+
+zaiz-trader-down:
+	docker compose -f compose/trading.yaml down
+
+zaiz-trader-logs:
+	docker compose -f compose/trading.yaml logs -f
+
+zaiz-trader-risk:
+	@python3 runtime/trading/risk_engine.py
+
+zaiz-trader-heal:
+	@echo "Healing Trading Engine..."
+
+zaiz-trader-replay:
+	@echo "Replaying Trading Events..."
+
+zaiz-trader-chaos:
+	@echo "Injecting Trading Chaos..."
+
+zaiz-trader-safe:
+	@echo "Entering Trading Safe Mode..."
+
+zaiz-trader-stop:
+	@echo "Emergency Trading Stop..."
