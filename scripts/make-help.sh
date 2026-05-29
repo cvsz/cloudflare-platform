@@ -79,6 +79,16 @@ Tokens:
   make token-rotate           Guarded; run live rotation from reviewed local shell
   make token-rotate-refresh   Alias for token-rotate-dry
 
+Git finalization:
+  make git-status             Print git status --short
+  make gpg-commit COMMIT_MSG="message"
+                              Commit staged changes with bash gpg-loopback.sh only
+  make gpg-push               Push current branch to origin; set GIT_BRANCH when detached
+  make gpg-finalize COMMIT_MSG="message"
+                              Run validate, gpg commit, push, and final status
+  make git-finalize COMMIT_MSG="message"
+                              Alias for gpg-finalize
+
 Release gate:
   make zaiz-validate          Alias for validate
   make zaiz-prod              Disabled in release-gate Makefile; use reviewed deployment workflow
