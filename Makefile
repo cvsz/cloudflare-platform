@@ -17,13 +17,14 @@ TF_ENV_DIR := terraform/environments/$(ENVIRONMENT)
 TOFU_ENV_DIR := opentofu/environments/$(ENVIRONMENT)
 PYTEST := $(VENV_DIR)/bin/pytest
 TF_ENV_WRAPPER := scripts/terraform/export-tf-vars.sh
+ENV_NORMALIZER := scripts/cloudflare/clean-env-empty-values.sh
 
 export PROJECT_ROOT
 export ENVIRONMENT
 export PYTHON
 export TF_ROOT
 
-.PHONY: help bootstrap setup setup-free setup-legacy generate-env-all refactor-cloudflare-vars refactor-cloudflare-vars-dry check-no-cf-vars env load-env docs-context upgrade-report validate validate-agent ci ci-validate validate-env validate-env-strict env-format-validate maintenance test fmt fmt-check lint shellcheck yaml-validate policy-test sbom-generation sbom-validate security-validate secret-scan tunnel-validation waf-validation waf-validate tf-init tf-fmt tf-fmt-check tf-validate tf-plan tf-plan-out tf-apply tf-apply-plan tf-destroy tf-state-rm-waf tf-env-init tf-env-validate tf-env-plan tofu-init tofu-validate tofu-plan drift drift-detect token-clean token-verify token-verify-strict token-rotate-dry token-rotate token-rotate-refresh security-scan sbom cosign-sign doctor clean phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6 phase-f7 workflow-policy workflow-validate gitops-validate health-zveo health-zwallet health-platform ssh-origin-setup ssh-origin-health ssh-route ssh-public-health backup-platform install-platform-ops
+.PHONY: help bootstrap setup setup-free setup-legacy generate-env-all refactor-cloudflare-vars refactor-cloudflare-vars-dry check-no-cf-vars env load-env docs-context upgrade-report validate validate-agent ci ci-validate validate-env validate-env-strict env-format-validate env-format-validate-local env-normalize-local maintenance test fmt fmt-check lint shellcheck yaml-validate policy-test sbom-generation sbom-validate security-validate secret-scan tunnel-validation waf-validation waf-validate tf-init tf-fmt tf-fmt-check tf-validate tf-plan tf-plan-out tf-apply tf-apply-plan tf-destroy tf-state-rm-waf tf-env-init tf-env-validate tf-env-plan tofu-init tofu-validate tofu-plan drift drift-detect token-clean token-verify token-verify-strict token-rotate-dry token-rotate token-rotate-refresh security-scan sbom cosign-sign doctor clean phase-f1 phase-f2 phase-f3 phase-f4 phase-f5 phase-f6 phase-f7 workflow-policy workflow-validate gitops-validate health-zveo health-zwallet health-platform ssh-origin-setup ssh-origin-health ssh-route ssh-public-health backup-platform install-platform-ops
 
 help:
 	@bash scripts/make-help.sh
@@ -80,6 +81,13 @@ validate-env-strict:
 
 env-format-validate:
 	@$(PYTHON) scripts/validate-env-files.py .env.example
+
+env-format-validate-local:
+	@$(PYTHON) scripts/validate-env-files.py --skip-missing .env .env.cloudflare .env.example
+
+env-normalize-local:
+	@if [ -f .env ]; then bash $(ENV_NORMALIZER) .env; chmod 600 .env; echo "normalized .env"; else echo "skip .env: not found"; fi
+	@if [ -f .env.cloudflare ]; then bash $(ENV_NORMALIZER) .env.cloudflare; chmod 600 .env.cloudflare; echo "normalized .env.cloudflare"; else echo "skip .env.cloudflare: not found"; fi
 
 maintenance:
 	@bash scripts/environments/maintenance.sh validate
