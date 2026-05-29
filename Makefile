@@ -12,7 +12,7 @@ TF_PLAN_FILE ?= tfplan
 TF_ARGS ?=
 COMMIT_MSG ?=
 GIT_REMOTE ?= origin
-GIT_BRANCH ?= $(shell git branch --show-current 2>/dev/null)
+GIT_BRANCH ?=
 GPG_LOOPBACK ?= bash gpg-loopback.sh
 
 TF_ROOT := terraform
@@ -220,7 +220,7 @@ gpg-commit:
 	@$(GPG_LOOPBACK) commit -m "$(COMMIT_MSG)"
 
 gpg-push:
-	@branch="$(GIT_BRANCH)"; test -n "$$branch" || (echo "ERROR: detached HEAD; set GIT_BRANCH=<branch>" && exit 1); git push $(GIT_REMOTE) "$$branch"
+	@branch="$(GIT_BRANCH)"; if [ -z "$$branch" ]; then branch="$$(git branch --show-current 2>/dev/null || true)"; fi; test -n "$$branch" || (echo "ERROR: detached HEAD; set GIT_BRANCH=<branch>" && exit 1); git push $(GIT_REMOTE) "$$branch"
 
 gpg-finalize: validate
 	@$(MAKE) git-status
