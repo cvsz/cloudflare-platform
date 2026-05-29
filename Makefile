@@ -302,3 +302,27 @@ zaiz-validate:
 
 zaiz-install:
 	@bash scripts/install.sh
+
+zaiz-heal:
+	@echo "Triggering self-healing runtime..."
+	@python3 runtime/self_healing_runtime.py
+
+zaiz-risk:
+	@echo "Evaluating deployment risk..."
+	@python3 runtime/risk_engine.py
+
+zaiz-release:
+	@echo "Starting autonomous release governor..."
+	@python3 runtime/release_governor.py
+
+zaiz-rollback:
+	@echo "Executing rollback engine..."
+	@python3 runtime/rollback_engine.py
+
+zaiz-memory:
+	@echo "Initializing platform memory..."
+	@python3 runtime/platform_memory/memory_engine.py
+
+zaiz-report:
+	@echo "Generating Ops AI report..."
+	@python3 runtime/ops_ai.py

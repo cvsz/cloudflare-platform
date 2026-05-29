@@ -5,3 +5,4 @@ include:
   - infra/authentik/compose.yaml
   - infra/observability/compose.yaml
   - infra/ai-runtime/compose.yaml
+  - infra/security/compose.yaml
