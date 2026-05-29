@@ -17,7 +17,7 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
+  ai-redis:
     image: redis:7-alpine
     restart: unless-stopped
     volumes:
@@ -71,7 +71,7 @@ services:
       - ./app:/app
     environment:
       - DATABASE_URL=postgresql://$${DB_USER:-ai_user}:$${DB_PASS:-ai_pass}@pgvector:5432/$${DB_NAME:-ai_runtime}
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://ai-redis:6379/0
       - OPENAI_API_KEY=$${OPENAI_API_KEY}
     networks:
       - ai_internal
@@ -100,7 +100,7 @@ services:
       - ./app:/app
     environment:
       - DATABASE_URL=postgresql://$${DB_USER:-ai_user}:$${DB_PASS:-ai_pass}@pgvector:5432/$${DB_NAME:-ai_runtime}
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://ai-redis:6379/0
     networks:
       - ai_internal
 
