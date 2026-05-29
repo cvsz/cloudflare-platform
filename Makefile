@@ -279,28 +279,9 @@ clean:
 	@rm -f $(TF_ROOT)/tfplan.drift $(TF_ROOT)/$(TF_PLAN_FILE) $(TF_ROOT)/*.tfplan artifacts.sbom.spdx.json artifacts.sbom.spdx.json.sig
 	@find . -type d -name '.terraform' -prune -print -exec rm -rf {} +
 
-auth-install:
-	bash infra/authentik/scripts/install.sh
+zaiz: zaiz-up
 
-auth-health:
-	curl -fsSL https://auth.zeaz.dev/-/health/live/
-
-auth-logs:
-	docker compose \
-	-f infra/authentik/compose.yaml \
-	logs -f
-
-auth-restart:
-	docker compose \
-	-f infra/authentik/compose.yaml \
-	restart
-
-auth-backup:
-	bash infra/authentik/scripts/backup.sh
-
-devex: devex-up
-
-devex-up:
+zaiz-up:
 	docker network create proxy || true
 	docker compose -f infra/cloudflare/compose.yaml up -d
 	docker compose -f infra/traefik/compose.yaml up -d
@@ -308,12 +289,12 @@ devex-up:
 	docker compose -f infra/ai-runtime/compose.yaml up -d
 	docker compose -f infra/observability/compose.yaml up -d
 
-devex-down:
+zaiz-down:
 	docker compose -f infra/observability/compose.yaml down
 	docker compose -f infra/ai-runtime/compose.yaml down
 	docker compose -f infra/authentik/compose.yaml down
 	docker compose -f infra/traefik/compose.yaml down
 	docker compose -f infra/cloudflare/compose.yaml down
 
-devex-logs:
+zaiz-logs:
 	docker compose -f infra/traefik/compose.yaml logs -f

@@ -6,9 +6,9 @@ echo "ZEAZ PLATFORM - VALIDATION SCRIPT"
 echo "========================================="
 
 echo "[1/5] Checking Public Ports (Should only have Cloudflared tunnel active)"
-if netstat -tulpn | grep -v 'cloudflared' | grep -E ':80|:443|:9000|:8000|:9090|:3000' > /dev/null; then
+if netstat -tulpn | grep -v 'cloudflared' | grep -E ':(80|443|9000|8000|9090|3000)\b' > /dev/null; then
     echo "❌ ERROR: Found exposed insecure ports!"
-    netstat -tulpn | grep -E ':80|:443|:9000|:8000|:9090|:3000'
+    netstat -tulpn | grep -E ':(80|443|9000|8000|9090|3000)\b'
     exit 1
 else
     echo "✅ No insecure public ports exposed."
@@ -31,18 +31,18 @@ services=(
   "grafana"
   "otel-collector"
 )
-for svc in "$${services[@]}"; do
+for svc in "${services[@]}"; do
   echo "✅ Service configured: $svc"
 done
 
 echo "[3/5] Verifying Routing & Middleware Config"
-if grep -q "Host(\`app.zeaz.dev\`)" infra/cloudflare/config.yml; then
+if grep -q "hostname: app.zeaz.dev" infra/cloudflare/config.yml; then
   echo "✅ Strict hostname routing enforced in Cloudflare."
 else
   echo "❌ Missing Cloudflare routing."
 fi
 
-if grep -q "auth@file" infra/traefik/dynamic.yml; then
+if grep -q "auth:" infra/traefik/dynamic.yml; then
   echo "✅ Traefik global auth middleware configured."
 else
   echo "❌ Missing global auth middleware."
