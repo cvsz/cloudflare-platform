@@ -395,3 +395,21 @@ zaiz-ports:
 
 zaiz-firewall:
 	@echo "Applying zero-trust firewall rules..."
+
+check-no-cf-vars:
+	@echo "Checking for legacy CF_ vars..."
+	@if grep -rn --exclude-dir=node_modules --exclude-dir=.git "CF_" .; then echo "Found legacy CF_ vars!"; exit 1; else echo "No legacy CF_ vars found."; fi
+
+token-verify:
+	@echo "Verifying CLOUDFLARE_BOOTSTRAP_TOKEN..."
+	@if [ -z "$$CLOUDFLARE_BOOTSTRAP_TOKEN" ]; then echo "Token not set"; exit 1; fi
+	@curl -s -X GET "https://api.cloudflare.com/client/v4/user/tokens/verify" -H "Authorization: Bearer $$CLOUDFLARE_BOOTSTRAP_TOKEN" | grep -q '"status": "active"' || { echo "Token invalid"; exit 1; }
+	@echo "Token valid."
+
+token-rotate-dry:
+	@echo "Running token rotation (DRY RUN)..."
+	@echo "Would rotate tokens using CLOUDFLARE_BOOTSTRAP_TOKEN"
+
+token-rotate:
+	@echo "Running token rotation..."
+	@echo "Token rotation implemented in upcoming step."
