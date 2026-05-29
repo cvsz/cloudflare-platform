@@ -11,6 +11,12 @@ llm_gateway:
     - path: /ws/topology
       protocol: websocket
       require_auth: true
+    - path: /api/runtime/scheduler/tasks
+      rate_limit: 100/min
+      require_auth: true
+    - path: /api/runtime/scheduler/topology/snapshot
+      rate_limit: 60/min
+      require_auth: true
 
   waf_rules:
     - name: block_runaway_agents
