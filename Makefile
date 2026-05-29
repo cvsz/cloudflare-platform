@@ -427,41 +427,10 @@ zaiz-token-metrics:
 
 zaiz-scheduler:
 	@echo "Initializing Cognitive Scheduler Worker..."
-<<<<<<< HEAD
-	@bash -c "source .venv/bin/activate && python3 -c 'import asyncio; from runtime.scheduler.scheduler_engine import SchedulerEngine; from runtime.scheduler.lease_manager import LeaseManager; from runtime.scheduler.execution_journal import ExecutionJournal; from runtime.scheduler.workload_balancer import WorkloadBalancer; from runtime.scheduler.backpressure_manager import BackpressureManager; from runtime.scheduler.affinity_engine import AffinityEngine; from runtime.llm.provider_registry import ProviderRegistry; from runtime.llm.token_budget_engine import TokenBudgetEngine; from runtime.policy_engine import PolicyEngine; r=ProviderRegistry(); b=TokenBudgetEngine(); a=AffinityEngine(r); bal=WorkloadBalancer(r,b,a); bp=BackpressureManager(); l=LeaseManager(); j=ExecutionJournal(); p=PolicyEngine(); s=SchedulerEngine(\"redis://localhost:6379/0\",l,j,bal,bp,p); asyncio.run(s.process_tasks(\"worker-1\"))'"
-=======
 	@bash -c "source .venv/bin/activate && python3 -c 'import asyncio; from runtime.scheduler.scheduler_engine import SchedulerEngine; from runtime.scheduler.lease_manager import LeaseManager; from runtime.scheduler.execution_journal import ExecutionJournal; from runtime.scheduler.workload_balancer import WorkloadBalancer; from runtime.scheduler.backpressure_manager import BackpressureManager; from runtime.scheduler.affinity_engine import AffinityEngine; from runtime.llm.provider_registry import ProviderRegistry; from runtime.llm.token_budget_engine import TokenBudgetEngine; r=ProviderRegistry(); b=TokenBudgetEngine(); a=AffinityEngine(r); bal=WorkloadBalancer(r,b,a); bp=BackpressureManager(); l=LeaseManager(); j=ExecutionJournal(); s=SchedulerEngine(\"redis://localhost:6379/0\",l,j,bal,bp); asyncio.run(s.process_tasks(\"worker-1\"))'"
->>>>>>> f2f2392 (Codex/final cleanup docs env backups (#122))
 
 zaiz-scheduler-test:
 	@echo "Submitting test task to Cognitive Scheduler..."
 	curl -s -X POST http://localhost:8000/api/runtime/scheduler/tasks \
 	  -H "Content-Type: application/json" \
 	  -d '{"action_type": "HEALING", "tenant_id": "test-tenant", "payload": {"target": "worker-pool-1"}}' | jq .
-<<<<<<< HEAD
-
-zaiz-swarm:
-	@echo "Initializing Autonomous Agent Swarm (Full Roster)..."
-	@bash -c "source .venv/bin/activate && python3 -c 'import asyncio; \
-	from runtime.swarm.agents.telemetry_agent import TelemetryAgent; \
-	from runtime.swarm.agents.security_agent import SecurityAgent; \
-	from runtime.swarm.agents.healing_agent import HealingAgent; \
-	from runtime.swarm.agents.governance_agent import GovernanceAgent; \
-	from runtime.swarm.agents.reasoning_agent import ReasoningAgent; \
-	from runtime.swarm.agents.deployment_agent import DeploymentAgent; \
-	from runtime.swarm.agents.predictive_agent import PredictiveAgent; \
-	from runtime.swarm.orchestrator import SwarmOrchestrator; \
-	async def start(): \
-		t=TelemetryAgent(); s=SecurityAgent(); h=HealingAgent(); \
-		g=GovernanceAgent(); r=ReasoningAgent(); d=DeploymentAgent(); p=PredictiveAgent(); \
-		o=SwarmOrchestrator(); \
-		await asyncio.gather(t.start(), s.start(), h.start(), g.start(), r.start(), d.start(), p.start(), o.manage_swarm()); \
-	asyncio.run(start())'"
-
-zaiz-swarm-incident:
-	@echo "Triggering test incident in Agent Swarm..."
-	curl -s -X POST http://localhost:8000/api/runtime/swarm/marketplace \
-	  -H "Content-Type: application/json" \
-	  -d '{"task_id": "incident-oom-1", "task_type": "HEAL_RUNTIME", "requirements": ["HEAL_RUNTIME"], "payload": {"service": "worker-1", "severity": "CRITICAL"}}' | jq .
-=======
->>>>>>> f2f2392 (Codex/final cleanup docs env backups (#122))
