@@ -1,7 +1,7 @@
 locals {
   subdomains = [
     "panel", "api", "auth", "grafana", "loki", "prometheus",
-    "trader", "ws.trader", "risk", "memory", "agents"
+    "trader", "ws.trader", "risk", "memory", "agents", "fcc"
   ]
 }
 
