@@ -1,5 +1,11 @@
 # zeaz-platform — Cloudflare Zero Trust + Free Control Panel
 
+[![ci](https://github.com/cvsz/zeaz-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/cvsz/zeaz-platform/actions/workflows/ci.yml)
+[![e2e](https://github.com/cvsz/zeaz-platform/actions/workflows/e2e.yml/badge.svg)](https://github.com/cvsz/zeaz-platform/actions/workflows/e2e.yml)
+[![release-validate](https://github.com/cvsz/zeaz-platform/actions/workflows/release-validate.yml/badge.svg)](https://github.com/cvsz/zeaz-platform/actions/workflows/release-validate.yml)
+[![release](https://github.com/cvsz/zeaz-platform/actions/workflows/release.yml/badge.svg)](https://github.com/cvsz/zeaz-platform/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Enterprise-grade Cloudflare infrastructure automation for **ZeazDev** (`zeaz.dev`) with scoped-token-first operations, Cloudflare Tunnel, DNS, Zero Trust Access, Terraform/OpenTofu, and a FREE NO COST control-panel expansion.
 
 Default operating mode is safe and cost-controlled:
