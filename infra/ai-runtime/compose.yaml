@@ -42,23 +42,29 @@ services:
     networks:
       - ai_internal
       - proxy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.minio.rule=Host(`s3.zeaz.dev`)"
       - "traefik.http.routers.minio.entrypoints=websecure"
       - "traefik.http.routers.minio.tls=true"
+      - "traefik.http.routers.minio.middlewares=auth@file"
       - "traefik.http.services.minio.loadbalancer.server.port=9000"
       - "traefik.http.routers.minio-console.rule=Host(`s3-console.zeaz.dev`)"
       - "traefik.http.routers.minio-console.entrypoints=websecure"
       - "traefik.http.routers.minio-console.tls=true"
-      - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
       - "traefik.http.routers.minio-console.middlewares=auth@file"
+      - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
 
   langgraph-api:
     image: python:3.11-slim
     restart: unless-stopped
     command: >
-      bash -c "pip install fastapi uvicorn langgraph langchain-openai psycopg2-binary redis && \
+      bash -c "pip install fastapi uvicorn langgraph langchain-openai psycopg2-binary redis pydantic && \
       uvicorn main:app --host 0.0.0.0 --port 8000"
     working_dir: /app
     volumes:
@@ -70,12 +76,32 @@ services:
     networks:
       - ai_internal
       - proxy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.langgraph.rule=Host(`ai.zeaz.dev`)"
       - "traefik.http.routers.langgraph.entrypoints=websecure"
       - "traefik.http.routers.langgraph.tls=true"
+      - "traefik.http.routers.langgraph.middlewares=auth@file"
       - "traefik.http.services.langgraph.loadbalancer.server.port=8000"
+
+  langgraph-worker:
+    image: python:3.11-slim
+    restart: unless-stopped
+    command: >
+      bash -c "pip install psycopg2-binary redis && python worker.py"
+    working_dir: /app
+    volumes:
+      - ./app:/app
+    environment:
+      - DATABASE_URL=postgresql://$${DB_USER:-ai_user}:$${DB_PASS:-ai_pass}@pgvector:5432/$${DB_NAME:-ai_runtime}
+      - REDIS_URL=redis://redis:6379/0
+    networks:
+      - ai_internal
 
 volumes:
   pgvector_data:

@@ -6,7 +6,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       start_period: 20s
-      interval: 30s
+      interval: 10s
       retries: 5
       timeout: 5s
     volumes:
@@ -27,7 +27,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       start_period: 20s
-      interval: 30s
+      interval: 10s
       retries: 5
       timeout: 3s
     volumes:
@@ -39,12 +39,20 @@ services:
     image: $${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:$${AUTHENTIK_TAG:-2024.4.2}
     restart: unless-stopped
     command: server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/-/health/live/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       AUTHENTIK_REDIS__HOST: redis
       AUTHENTIK_POSTGRESQL__HOST: postgresql
       AUTHENTIK_POSTGRESQL__USER: $${PG_USER:-authentik}
       AUTHENTIK_POSTGRESQL__NAME: $${PG_DB:-authentik}
       AUTHENTIK_POSTGRESQL__PASSWORD: $${PG_PASS}
+      AUTHENTIK_HOST: https://auth.zeaz.dev
+      AUTHENTIK_COOKIE_DOMAIN: .zeaz.dev
+      AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
     volumes:
       - ./media:/media
       - ./custom-templates:/templates
@@ -70,6 +78,8 @@ services:
       AUTHENTIK_POSTGRESQL__USER: $${PG_USER:-authentik}
       AUTHENTIK_POSTGRESQL__NAME: $${PG_DB:-authentik}
       AUTHENTIK_POSTGRESQL__PASSWORD: $${PG_PASS}
+      AUTHENTIK_HOST: https://auth.zeaz.dev
+      AUTHENTIK_COOKIE_DOMAIN: .zeaz.dev
     user: root
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

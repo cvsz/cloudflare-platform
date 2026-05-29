@@ -16,6 +16,13 @@ http:
           - X-authentik-meta-provider
           - X-authentik-meta-app
           - X-authentik-meta-version
+    global-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: https
+          X-Service-ID: traefik-gateway
+          X-Request-ID: ""
+          X-Trace-ID: ""
     securityHeaders:
       headers:
         browserXssFilter: true

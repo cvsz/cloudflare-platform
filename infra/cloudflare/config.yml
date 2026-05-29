@@ -1,0 +1,20 @@
+tunnel: $${CLOUDFLARE_TUNNEL_ID}
+credentials-file: /etc/cloudflared/creds.json
+ingress:
+  - hostname: app.zeaz.dev
+    service: http://traefik:80
+  - hostname: api.zeaz.dev
+    service: http://traefik:80
+  - hostname: auth.zeaz.dev
+    service: http://traefik:80
+  - hostname: s3.zeaz.dev
+    service: http://traefik:80
+  - hostname: s3-console.zeaz.dev
+    service: http://traefik:80
+  - hostname: grafana.zeaz.dev
+    service: http://traefik:80
+  - hostname: prom.zeaz.dev
+    service: http://traefik:80
+  - hostname: ai.zeaz.dev
+    service: http://traefik:80
+  - service: http_status:404
