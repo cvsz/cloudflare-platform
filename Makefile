@@ -326,3 +326,21 @@ zaiz-memory:
 zaiz-report:
 	@echo "Generating Ops AI report..."
 	@python3 runtime/ops_ai.py
+
+zaiz-core:
+	docker compose -f compose/core.yaml up -d
+
+zaiz-edge:
+	docker compose -f compose/edge.yaml up -d
+
+zaiz-ai:
+	docker compose -f compose/ai.yaml up -d
+
+zaiz-obs:
+	docker compose -f compose/observability.yaml up -d
+
+zaiz-heal:
+	docker compose -f compose/healing.yaml up -d
+
+zaiz-prod:
+	docker compose -f compose/core.yaml -f compose/edge.yaml -f compose/auth.yaml -f compose/observability.yaml -f compose/runtime.yaml -f compose/governance.yaml -f compose/healing.yaml up -d
