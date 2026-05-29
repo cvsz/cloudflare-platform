@@ -11,6 +11,8 @@ from runtime.scheduler.affinity_engine import AffinityEngine
 from runtime.llm.provider_registry import ProviderRegistry
 from runtime.llm.token_budget_engine import TokenBudgetEngine
 
+from runtime.policy_engine import PolicyEngine
+
 router = APIRouter()
 
 # Setup (In a real app, use dependency injection/global state)
@@ -21,13 +23,15 @@ balancer = WorkloadBalancer(registry, budget_engine, affinity_engine)
 backpressure = BackpressureManager()
 lease_manager = LeaseManager()
 journal = ExecutionJournal()
+policy_engine = PolicyEngine()
 
 scheduler = SchedulerEngine(
     "redis://localhost:6379/0",
     lease_manager,
     journal,
     balancer,
-    backpressure
+    backpressure,
+    policy_engine
 )
 
 @router.post("/tasks")
