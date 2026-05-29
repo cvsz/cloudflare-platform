@@ -402,3 +402,35 @@ zaiz-ports:
 
 zaiz-firewall:
 	@echo "Applying zero-trust firewall rules..."
+###############################################################################
+# GOOGLE VERTEX AI
+###############################################################################
+
+zaiz-vertex-test:
+	python3 scripts/test_vertex.py
+
+zaiz-gcloud-env:
+	@bash scripts/google_vertex_runtime.sh
+
+zaiz-llm-v2:
+	@echo "Initializing Cognitive Fabric v2 Mesh..."
+	docker compose up -d redis postgres grafana prometheus
+	@bash -c "source .venv/bin/activate && uvicorn apps.api.main:app --host 0.0.0.0 --port 8000 --reload"
+
+zaiz-vertex-v2:
+	@echo "Testing Vertex AI Cognitive Mesh connectivity..."
+	@bash scripts/validate_cognitive_fabric.sh --provider vertex-ai
+
+zaiz-token-metrics:
+	@echo "Fetching token burn analytics..."
+	curl -s http://localhost:8000/api/runtime/llm/metrics | jq .
+
+zaiz-scheduler:
+	@echo "Initializing Cognitive Scheduler Worker..."
+	@bash -c "source .venv/bin/activate && python3 -c 'import asyncio; from runtime.scheduler.scheduler_engine import SchedulerEngine; from runtime.scheduler.lease_manager import LeaseManager; from runtime.scheduler.execution_journal import ExecutionJournal; from runtime.scheduler.workload_balancer import WorkloadBalancer; from runtime.scheduler.backpressure_manager import BackpressureManager; from runtime.scheduler.affinity_engine import AffinityEngine; from runtime.llm.provider_registry import ProviderRegistry; from runtime.llm.token_budget_engine import TokenBudgetEngine; r=ProviderRegistry(); b=TokenBudgetEngine(); a=AffinityEngine(r); bal=WorkloadBalancer(r,b,a); bp=BackpressureManager(); l=LeaseManager(); j=ExecutionJournal(); s=SchedulerEngine(\"redis://localhost:6379/0\",l,j,bal,bp); asyncio.run(s.process_tasks(\"worker-1\"))'"
+
+zaiz-scheduler-test:
+	@echo "Submitting test task to Cognitive Scheduler..."
+	curl -s -X POST http://localhost:8000/api/runtime/scheduler/tasks \
+	  -H "Content-Type: application/json" \
+	  -d '{"action_type": "HEALING", "tenant_id": "test-tenant", "payload": {"target": "worker-pool-1"}}' | jq .
