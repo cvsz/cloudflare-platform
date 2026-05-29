@@ -2,22 +2,35 @@ import asyncio
 import logging
 import json
 import time
+<<<<<<< HEAD
 import uuid
+=======
+>>>>>>> 580d172 (feat: implement ZEAZ Autonomous Agent Swarm Runtime with distributed cooperation, task marketplace, and semantic consensus)
 from typing import Dict, Any, List, Optional
 import redis
 from runtime.swarm.marketplace import TaskMarketplace
 from runtime.swarm.consensus_engine import ConsensusEngine
+<<<<<<< HEAD
 from runtime.scheduler.scheduler_engine import SchedulerEngine
 from runtime.scheduler.models import CognitiveTask
+=======
+>>>>>>> 580d172 (feat: implement ZEAZ Autonomous Agent Swarm Runtime with distributed cooperation, task marketplace, and semantic consensus)
 
 logger = logging.getLogger("SwarmOrchestrator")
 
 class SwarmOrchestrator:
+<<<<<<< HEAD
     def __init__(self, redis_url: str = "redis://localhost:6379/0", scheduler: Optional[SchedulerEngine] = None):
         self.redis = redis.from_url(redis_url)
         self.marketplace = TaskMarketplace(redis_url)
         self.consensus = ConsensusEngine(redis_url)
         self.scheduler = scheduler
+=======
+    def __init__(self, redis_url: str = "redis://localhost:6379/0"):
+        self.redis = redis.from_url(redis_url)
+        self.marketplace = TaskMarketplace(redis_url)
+        self.consensus = ConsensusEngine(redis_url)
+>>>>>>> 580d172 (feat: implement ZEAZ Autonomous Agent Swarm Runtime with distributed cooperation, task marketplace, and semantic consensus)
 
     async def manage_swarm(self):
         logger.info("Swarm Orchestrator started.")
@@ -28,6 +41,11 @@ class SwarmOrchestrator:
                 logger.debug(f"Active agents in swarm: {len(active_agents)}")
                 
                 # 2. Resolve marketplace tasks
+<<<<<<< HEAD
+=======
+                # In a real system, this would look at bids and assign tasks
+                # based on affinity, score, and consensus requirements.
+>>>>>>> 580d172 (feat: implement ZEAZ Autonomous Agent Swarm Runtime with distributed cooperation, task marketplace, and semantic consensus)
                 await self._resolve_bids()
                 
             except Exception as e:
@@ -36,6 +54,7 @@ class SwarmOrchestrator:
 
     async def _resolve_bids(self):
         # Scan for tasks with bids but no assignment
+<<<<<<< HEAD
         # Simplified resolver: Pick the best bid and submit to Scheduler
         pass
 
@@ -56,6 +75,11 @@ class SwarmOrchestrator:
         await self.scheduler.submit_task(task)
         logger.info(f"Orchestrator submitted task {task_id} to Scheduler.")
 
+=======
+        # This is a simplified auction resolver
+        pass
+
+>>>>>>> 580d172 (feat: implement ZEAZ Autonomous Agent Swarm Runtime with distributed cooperation, task marketplace, and semantic consensus)
     async def coordinate_incident_swarm(self, incident_id: str, severity: str):
         """
         Trigger an 'incident swarm' mode where multiple specialized agents

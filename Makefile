@@ -435,6 +435,7 @@ zaiz-scheduler-test:
 	  -H "Content-Type: application/json" \
 	  -d '{"action_type": "HEALING", "tenant_id": "test-tenant", "payload": {"target": "worker-pool-1"}}' | jq .
 
+<<<<<<< HEAD
 ###############################################################################
 # DEPENDENCY FIXERS
 ###############################################################################
@@ -451,3 +452,14 @@ zaiz-deps-check:
 		. .venv-depcheck/bin/activate && python -m pip install --dry-run -r requirements.txt; \
 	fi
 	@rm -rf .venv-depcheck
+=======
+zaiz-swarm:
+	@echo "Initializing Autonomous Agent Swarm..."
+	@bash -c "source .venv/bin/activate && python3 -c 'import asyncio; from runtime.swarm.agents.telemetry_agent import TelemetryAgent; from runtime.swarm.agents.security_agent import SecurityAgent; from runtime.swarm.agents.healing_agent import HealingAgent; from runtime.swarm.orchestrator import SwarmOrchestrator; async def start(): t=TelemetryAgent(); s=SecurityAgent(); h=HealingAgent(); o=SwarmOrchestrator(); await asyncio.gather(t.start(), s.start(), h.start(), o.manage_swarm()); asyncio.run(start())'"
+
+zaiz-swarm-incident:
+	@echo "Triggering test incident in Agent Swarm..."
+	curl -s -X POST http://localhost:8000/api/runtime/swarm/marketplace \
+	  -H "Content-Type: application/json" \
+	  -d '{"task_id": "incident-oom-1", "task_type": "HEAL_RUNTIME", "requirements": ["HEAL_RUNTIME"], "payload": {"service": "worker-1", "severity": "CRITICAL"}}' | jq .
+>>>>>>> 7574601 (feat: implement ZEAZ Autonomous Agent Swarm Runtime with distributed cooperation, task marketplace, and semantic consensus)
