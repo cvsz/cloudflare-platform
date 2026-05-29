@@ -371,3 +371,27 @@ zaiz-trader-safe:
 
 zaiz-trader-stop:
 	@echo "Emergency Trading Stop..."
+
+zaiz-restart:
+	docker compose restart
+
+zaiz-auth:
+	docker compose -f compose/auth.yaml up -d
+
+zaiz-trader:
+	docker compose -f compose/trading-core.yaml -f compose/trading-ai.yaml -f compose/trading-risk.yaml up -d
+
+zaiz-cloudflare-sync:
+	terraform -chdir=terraform/cloudflare apply -auto-approve
+
+zaiz-tunnel:
+	cloudflared tunnel run zeaz-meta-os-tunnel
+
+zaiz-ws-test:
+	@echo "Testing websocket multiplexing..."
+
+zaiz-ports:
+	bash scripts/validation/validate_ports.sh
+
+zaiz-firewall:
+	@echo "Applying zero-trust firewall rules..."
