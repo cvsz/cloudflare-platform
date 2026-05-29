@@ -172,7 +172,7 @@ token-rotate:
 token-rotate-refresh: token-rotate-dry
 
 secret-scan:
-	@if command -v gitleaks >/dev/null 2>&1; then gitleaks detect --no-git --config security/gitleaks.toml --source . --redact; else echo "WARN: gitleaks not installed; skipped gitleaks scan"; fi
+	@bash scripts/secret-scan-tracked.sh
 
 secret-scan-history:
 	@if command -v gitleaks >/dev/null 2>&1; then gitleaks detect --config security/gitleaks.toml --source . --redact; else echo "WARN: gitleaks not installed; skipped gitleaks history scan"; fi
